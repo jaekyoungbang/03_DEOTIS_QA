@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEOTIS RAG QA System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .warning-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        h1 {
+            color: #1a202c;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .message {
+            color: #4a5568;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .info-box {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-top: 2rem;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .info-box p {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        .redirect-notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: inline-block;
+        }
+
+        .redirect-notice span {
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .countdown {
+            font-size: 1.2rem;
+            color: #764ba2;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning-icon">⚠️</div>
+        
+        <h1>이 페이지는 사용하지 않습니다</h1>
+        
+        <div class="redirect-notice">
+            <span id="countdown" class="countdown">5</span>초 후 자동으로 이동합니다
+        </div>
+        
+        <div class="message">
+            DEOTIS RAG QA System의 메인 페이지로 이동합니다.<br>
+            아래 버튼을 클릭하여 즉시 이동할 수 있습니다.
+        </div>
+        
+        <div class="button-group">
+            <a href="/deotisrag" class="btn btn-primary">
+                🚀 메인 페이지로 이동
+            </a>
+            <a href="/swagger/" class="btn btn-secondary">
+                📚 API 문서 (Swagger)
+            </a>
+        </div>
+        
+        <div class="info-box">
+            <h3>📌 안내사항</h3>
+            <p>• 메인 페이지: <strong>/deotisrag</strong></p>
+            <p>• API 문서: <strong>/swagger/</strong></p>
+            <p>• 관리자 설정은 우측 상단 ⚙️ 버튼을 클릭하세요</p>
+        </div>
+    </div>
+
+    <script>
+        // 5초 후 자동 리다이렉션
+        let seconds = 5;
+        const countdownElement = document.getElementById('countdown');
+        
+        const countdown = setInterval(() => {
+            seconds--;
+            countdownElement.textContent = seconds;
+            
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                window.location.href = '/deotisrag';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

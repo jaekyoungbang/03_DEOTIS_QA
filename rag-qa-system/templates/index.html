@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG QA System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+            margin-left: 20%;
+        }
+        .ai-message {
+            background-color: #e9ecef;
+            margin-right: 20%;
+            line-height: 1.6;
+        }
+        .ai-message h3 {
+            color: #0066cc;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .ai-message table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .ai-message table th,
+        .ai-message table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .ai-message table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .ai-message strong {
+            color: #0066cc;
+        }
+        .ai-message ul, .ai-message ol {
+            padding-left: 20px;
+        }
+        .ai-message li {
+            margin-bottom: 5px;
+        }
+        .source-doc {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 5px;
+            padding: 5px;
+            background-color: #f1f3f5;
+            border-radius: 5px;
+        }
+        .upload-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .document-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .admin-settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .admin-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1001;
+            overflow-y: auto;
+        }
+        .admin-panel.open {
+            right: 0;
+        }
+        .admin-panel-header {
+            background: #007bff;
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+        }
+        .admin-panel-content {
+            padding: 20px;
+        }
+        .admin-login-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .admin-action-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Settings Button -->
+    <button class="btn btn-outline-secondary admin-settings-btn" onclick="toggleAdminPanel()">
+        ⚙️ 관리자
+    </button>
+
+    <!-- Overlay -->
+    <div class="overlay" id="adminOverlay" onclick="closeAdminPanel()"></div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-panel-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">⚙️ 관리자 설정</h5>
+                <button class="btn btn-outline-light btn-sm" onclick="closeAdminPanel()">✕</button>
+            </div>
+        </div>
+        <div class="admin-panel-content">
+            <!-- Login Form -->
+            <div class="admin-login-form" id="adminLoginForm">
+                <h6>🔐 관리자 인증</h6>
+                <div class="mb-3">
+                    <input type="password" class="form-control" id="adminPassword" placeholder="관리자 비밀번호" onkeypress="handleAdminKeyPress(event)">
+                </div>
+                <button class="btn btn-primary w-100" onclick="adminLogin()">로그인</button>
+            </div>
+
+            <!-- Admin Actions (hidden until login) -->
+            <div id="adminActions" style="display: none;">
+                <div class="admin-action-group">
+                    <h6>🗑️ 데이터 관리</h6>
+                    <button class="btn btn-warning w-100 mb-2" onclick="resetAllData()">
+                        전체 시스템 데이터 초기화
+                    </button>
+                    <small class="text-muted">Chroma DB, Redis, SQLite 모든 데이터 삭제</small>
+                </div>
+
+                <div class="admin-action-group">
+                    <h6>📊 캐시 관리</h6>
+                    <button class="btn btn-info w-100 mb-2" onclick="clearAllCache()">
+                        모든 캐시 초기화
+                    </button>
+                    <button class="btn btn-secondary w-100 mb-2" onclick="clearRDBCache()">
+                        RDB 캐시만 초기화
+                    </button>
+                </div>
+
+                <div class="admin-action-group">
+                    <h6>🔄 벡터 DB 관리</h6>
+                    <button class="btn btn-primary w-100 mb-2" onclick="resetVectorDB()">
+                        벡터 DB 리셋 및 재로드
+                    </button>
+                </div>
+
+                <div class="admin-action-group">
+                    <h6>📈 통계 확인</h6>
+                    <button class="btn btn-success w-100 mb-2" onclick="viewCacheStats()">
+                        캐시 통계 보기
+                    </button>
+                </div>
+
+                <div class="admin-action-group">
+                    <button class="btn btn-outline-danger w-100" onclick="adminLogout()">
+                        로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">🤖 RAG QA System</h1>
+        
+        <!-- Document Upload Section -->
+        <div class="upload-section">
+            <h4>📄 문서 업로드</h4>
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="file" class="form-control" id="fileInput" accept=".pdf,.txt,.docx,.md">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100" onclick="uploadDocument()">업로드</button>
+                </div>
+            </div>
+            <div class="mt-3">
+                <h5>또는 텍스트 직접 입력:</h5>
+                <textarea class="form-control" id="textInput" rows="3" placeholder="텍스트를 입력하세요..."></textarea>
+                <button class="btn btn-secondary mt-2" onclick="uploadText()">텍스트 추가</button>
+            </div>
+            <div class="mt-3">
+                <h5>📚 업로드된 문서:</h5>
+                <div id="documentList" class="document-list"></div>
+                <div class="mt-2">
+                    <button class="btn btn-danger btn-sm me-2" onclick="clearAllDocuments()">모든 문서 삭제</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Interface -->
+        <div class="card">
+            <div class="card-body">
+                <div class="chat-container" id="chatContainer">
+                    <div class="message ai-message">
+                        안녕하세요! RAG QA 시스템입니다. 문서를 업로드하고 질문해주세요.
+                    </div>
+                </div>
+                <div class="input-group mt-3">
+                    <input type="text" class="form-control" id="questionInput" placeholder="질문을 입력하세요..." onkeypress="handleKeyPress(event)">
+                    <button class="btn btn-primary" onclick="sendQuestion()">전송</button>
+                    <button class="btn btn-secondary" onclick="clearChat()">대화 초기화</button>
+                </div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="useMemory">
+                    <label class="form-check-label" for="useMemory">
+                        대화 기록 사용
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Load document list on page load
+        window.onload = function() {
+            loadDocumentList();
+        };
+
+        // Simple markdown to HTML conversion
+        function formatMarkdown(text) {
+            // Basic markdown formatting
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Headers
+            text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            
+            // Lists
+            text = text.replace(/^\s*\n\*/gm, '<ul>\n*');
+            text = text.replace(/^(\*.+)\s*\n([^\*])/gm, '$1\n</ul>\n\n$2');
+            text = text.replace(/^\*(.+)/gm, '<li>$1</li>');
+            
+            // Numbered lists
+            text = text.replace(/^\s*\n\d+\./gm, '<ol>\n1.');
+            text = text.replace(/^(\d+\..+)\s*\n([^\d])/gm, '$1\n</ol>\n\n$2');
+            text = text.replace(/^\d+\.(.+)/gm, '<li>$1</li>');
+            
+            // Line breaks
+            text = text.replace(/\n\n/g, '</p><p>');
+            text = '<p>' + text + '</p>';
+            
+            // Clean up empty paragraphs
+            text = text.replace(/<p><\/p>/g, '');
+            text = text.replace(/<p>(<h[1-6])/g, '$1');
+            text = text.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+            
+            return text;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendQuestion();
+            }
+        }
+
+        async function sendQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const chatContainer = document.getElementById('chatContainer');
+            const useMemory = document.getElementById('useMemory').checked;
+
+            // Add user message
+            chatContainer.innerHTML += `<div class="message user-message">${question}</div>`;
+            input.value = '';
+
+            try {
+                const response = await fetch('/api/chat/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        question: question,
+                        use_memory: useMemory 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    chatContainer.innerHTML += `<div class="message ai-message">오류: ${data.error}</div>`;
+                } else {
+                    // Format the answer with markdown
+                    const formattedAnswer = formatMarkdown(data.answer);
+                    let aiMessage = `<div class="message ai-message">${formattedAnswer}`;
+                    
+                    // Add source documents if available
+                    if (data.source_documents && data.source_documents.length > 0) {
+                        aiMessage += '<div class="source-doc"><strong>📄 참고 문서:</strong><br>';
+                        data.source_documents.forEach((doc, idx) => {
+                            aiMessage += `${idx + 1}. ${doc.metadata.source_file || doc.metadata.title || doc.metadata.filename || 'Unknown'}<br>`;
+                        });
+                        aiMessage += '</div>';
+                    }
+                    
+                    aiMessage += '</div>';
+                    chatContainer.innerHTML += aiMessage;
+                }
+            } catch (error) {
+                chatContainer.innerHTML += `<div class="message ai-message">오류: ${error.message}</div>`;
+            }
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function uploadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/document/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert(`업로드 실패: ${data.error}`);
+                } else {
+                    alert(`업로드 성공! ${data.chunks_created}개의 청크가 생성되었습니다.`);
+                    fileInput.value = '';
+                    loadDocumentList();
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function uploadText() {
+            const textInput = document.getElementById('textInput');
+            const text = textInput.value.trim();
+            if (!text) {
+                alert('텍스트를 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/document/upload-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        text: text,
+                        title: 'Direct Input ' + new Date().toLocaleString()
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert(`업로드 실패: ${data.error}`);
+                } else {
+                    alert(`텍스트 추가 성공! ${data.chunks_created}개의 청크가 생성되었습니다.`);
+                    textInput.value = '';
+                    loadDocumentList();
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function loadDocumentList() {
+            try {
+                const response = await fetch('/api/document/list');
+                const data = await response.json();
+                
+                const listContainer = document.getElementById('documentList');
+                if (data.files && data.files.length > 0) {
+                    listContainer.innerHTML = data.files.map(file => 
+                        `<div>📄 ${file.filename} (${(file.size / 1024).toFixed(2)} KB)</div>`
+                    ).join('');
+                    listContainer.innerHTML += `<div class="mt-2"><strong>총 청크 수: ${data.total_chunks}</strong></div>`;
+                } else {
+                    listContainer.innerHTML = '<div class="text-muted">업로드된 문서가 없습니다.</div>';
+                }
+            } catch (error) {
+                console.error('문서 목록 로드 실패:', error);
+            }
+        }
+
+        async function clearAllDocuments() {
+            if (!confirm('모든 문서를 삭제하시겠습니까?')) return;
+
+            try {
+                const response = await fetch('/api/document/clear-all', {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                alert(data.message || '문서가 삭제되었습니다.');
+                loadDocumentList();
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function clearChat() {
+            document.getElementById('chatContainer').innerHTML = 
+                '<div class="message ai-message">대화가 초기화되었습니다. 새로운 질문을 해주세요.</div>';
+            
+            // Clear memory on server
+            await fetch('/api/chat/clear-memory', { method: 'POST' });
+        }
+
+        // Admin Panel Variables
+        let adminToken = null;
+
+        // Admin Panel Functions
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            const overlay = document.getElementById('adminOverlay');
+            
+            if (panel.classList.contains('open')) {
+                closeAdminPanel();
+            } else {
+                panel.classList.add('open');
+                overlay.classList.add('show');
+            }
+        }
+
+        function closeAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            const overlay = document.getElementById('adminOverlay');
+            
+            panel.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+
+        function handleAdminKeyPress(event) {
+            if (event.key === 'Enter') {
+                adminLogin();
+            }
+        }
+
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) {
+                alert('비밀번호를 입력하세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.token;
+                    
+                    // Hide login form and show admin actions
+                    document.getElementById('adminLoginForm').style.display = 'none';
+                    document.getElementById('adminActions').style.display = 'block';
+                    
+                    alert('관리자 로그인 성공!');
+                } else {
+                    alert('비밀번호가 일치하지 않습니다.');
+                    document.getElementById('adminPassword').value = '';
+                }
+            } catch (error) {
+                alert(`로그인 오류: ${error.message}`);
+            }
+        }
+
+        function adminLogout() {
+            adminToken = null;
+            document.getElementById('adminLoginForm').style.display = 'block';
+            document.getElementById('adminActions').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        async function resetAllData() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('⚠️ 경고: 모든 데이터를 초기화합니다!\n\n다음 데이터가 삭제됩니다:\n- Chroma 벡터 데이터베이스\n- Redis 캐시\n- SQLite 캐시 및 통계\n- 모든 검색 기록\n\n정말 진행하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/system/reset-all', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let message = '✅ 전체 데이터 초기화 완료!\n\n';
+                    
+                    if (data.chroma_db?.status === 'success') {
+                        message += `📊 Chroma DB: ${data.chroma_db.deleted_documents}개 문서 삭제\n`;
+                    }
+                    
+                    if (data.redis?.status === 'success') {
+                        message += `🔴 Redis: ${data.redis.cleared_keys}개 키 삭제\n`;
+                    } else if (data.redis?.status === 'skipped') {
+                        message += `🔴 Redis: ${data.redis.message}\n`;
+                    }
+                    
+                    if (data.sqlite?.status === 'success') {
+                        message += `💾 SQLite: ${data.sqlite.total_cleared}개 레코드 삭제\n`;
+                    }
+                    
+                    alert(message);
+                    
+                    // UI 새로고침
+                    loadDocumentList();
+                    clearChat();
+                } else {
+                    alert(`초기화 실패: ${data.error || '알 수 없는 오류'}`);
+                }
+
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function clearAllCache() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/cache/clear-all', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                alert(data.message || '모든 캐시가 초기화되었습니다.');
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function clearRDBCache() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/cache/clear-rdb', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                alert(data.message || 'RDB 캐시가 초기화되었습니다.');
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function resetVectorDB() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('벡터 DB를 리셋하고 문서를 재로드하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/vectordb/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                alert(data.message || '벡터 DB 리셋 완료');
+                loadDocumentList();
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function viewCacheStats() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/cache/hybrid-stats', {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                let statsMessage = '📈 캐시 통계\n\n';
+                
+                if (data.redis_stats) {
+                    statsMessage += `🔴 Redis:\n`;
+                    statsMessage += `  - 총 키: ${data.redis_stats.total_keys}\n`;
+                    statsMessage += `  - 메모리 사용량: ${data.redis_stats.memory_usage}\n\n`;
+                }
+                
+                if (data.sqlite_stats) {
+                    statsMessage += `💾 SQLite:\n`;
+                    statsMessage += `  - 쿼리 캐시: ${data.sqlite_stats.total_entries}개\n`;
+                    statsMessage += `  - 총 히트: ${data.sqlite_stats.total_hits}회\n`;
+                    statsMessage += `  - 캐시 크기: ${data.sqlite_stats.cache_size_mb}MB\n`;
+                }
+                
+                alert(statsMessage);
+            } catch (error) {
+                alert(`통계 조회 오류: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

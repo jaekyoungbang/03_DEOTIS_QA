@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG QA System - Enhanced</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+            margin-left: 20%;
+        }
+        .ai-message {
+            background-color: #e9ecef;
+            margin-right: 20%;
+            line-height: 1.6;
+        }
+        .ai-message h3 {
+            color: #0066cc;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .ai-message table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .ai-message table th,
+        .ai-message table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .ai-message table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .ai-message strong {
+            color: #0066cc;
+        }
+        .ai-message ul, .ai-message ol {
+            padding-left: 20px;
+        }
+        .ai-message li {
+            margin-bottom: 5px;
+        }
+        .ai-message .list-check {
+            list-style: none;
+            padding-left: 0;
+        }
+        .ai-message .list-check li {
+            padding-left: 25px;
+            position: relative;
+        }
+        .ai-message .table-bordered {
+            border: 2px solid #dee2e6;
+        }
+        .ai-message .table-bordered th,
+        .ai-message .table-bordered td {
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .source-doc {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 5px;
+            padding: 5px;
+            background-color: #f1f3f5;
+            border-radius: 5px;
+        }
+        .upload-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .document-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .settings-section {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .model-selector {
+            margin-bottom: 15px;
+        }
+        .vectordb-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">🤖 RAG QA System - Enhanced</h1>
+        
+        <!-- Settings Section -->
+        <div class="settings-section">
+            <h4><i class="fas fa-cog"></i> 시스템 설정</h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">LLM 모델 선택:</label>
+                    <select class="form-select model-selector" id="llmModel">
+                        <option value="gpt-4o-mini" selected>GPT-4o-mini (빠름)</option>
+                        <option value="gpt-4-turbo">GPT-4.1-mini (정확함)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">청크 크기:</label>
+                    <input type="number" class="form-control" id="chunkSize" value="1000">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">청크 겹침:</label>
+                    <input type="number" class="form-control" id="chunkOverlap" value="200">
+                </div>
+            </div>
+            <div class="vectordb-info mt-3">
+                <strong>📊 벡터DB 정보:</strong> <span id="vectorDbInfo">로딩 중...</span>
+                <button class="btn btn-sm btn-outline-danger ms-2" onclick="clearVectorDB()">
+                    <i class="fas fa-trash"></i> DB 초기화
+                </button>
+            </div>
+        </div>
+        
+        <!-- Document Upload Section -->
+        <div class="upload-section">
+            <h4><i class="fas fa-upload"></i> 문서 관리</h4>
+            
+            <!-- S3 Auto Load -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <button class="btn btn-success w-100" onclick="loadS3Documents()">
+                        <i class="fas fa-folder-open"></i> S3 폴더 문서 자동 로드
+                    </button>
+                </div>
+            </div>
+            
+            <!-- File Upload -->
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="file" class="form-control" id="fileInput" accept=".pdf,.txt,.docx,.md">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100" onclick="uploadDocument()">
+                        <i class="fas fa-upload"></i> 파일 업로드
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Text Input -->
+            <div class="mt-3">
+                <h5>또는 텍스트 직접 입력:</h5>
+                <textarea class="form-control" id="textInput" rows="3" placeholder="텍스트를 입력하세요..."></textarea>
+                <div class="mt-2">
+                    <input type="text" class="form-control mb-2" id="textTitle" placeholder="문서 제목 (선택)">
+                    <button class="btn btn-secondary" onclick="uploadText()">
+                        <i class="fas fa-plus"></i> 텍스트 추가
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Document List -->
+            <div class="mt-3">
+                <h5>📚 문서 현황:</h5>
+                <div id="documentList" class="document-list"></div>
+                <button class="btn btn-danger btn-sm mt-2" onclick="clearAllDocuments()">
+                    <i class="fas fa-trash"></i> 모든 문서 삭제
+                </button>
+            </div>
+        </div>
+        
+        <!-- Chat Interface -->
+        <div class="card">
+            <div class="card-body">
+                <div class="chat-container" id="chatContainer">
+                    <div class="message ai-message">
+                        <h3>🤖 RAG QA 시스템에 오신 것을 환영합니다!</h3>
+                        <p>문서를 업로드하고 질문해주세요. 다음 기능들을 사용할 수 있습니다:</p>
+                        <ul>
+                            <li><strong>S3 자동 로드:</strong> 미리 준비된 문서들을 한번에 로드</li>
+                            <li><strong>LLM 모델 선택:</strong> GPT-4o-mini 또는 GPT-4.1-mini 선택</li>
+                            <li><strong>실시간 설정:</strong> 청킹 크기 및 겹침 조정</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="input-group mt-3">
+                    <input type="text" class="form-control" id="questionInput" placeholder="질문을 입력하세요..." onkeypress="handleKeyPress(event)">
+                    <button class="btn btn-primary" onclick="sendQuestion()">
+                        <i class="fas fa-paper-plane"></i> 전송
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearChat()">
+                        <i class="fas fa-eraser"></i> 초기화
+                    </button>
+                </div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="useMemory">
+                    <label class="form-check-label" for="useMemory">
+                        대화 기록 사용
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Documentation Link -->
+        <div class="text-center mt-4">
+            <a href="/swagger/" class="btn btn-outline-info" target="_blank">
+                <i class="fas fa-book"></i> API 문서 (Swagger)
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Load initial data
+        window.onload = function() {
+            loadDocumentList();
+            loadVectorDBInfo();
+        };
+
+        // Advanced markdown formatting function
+        function formatMarkdown(text) {
+            // First, handle tables (most important fix)
+            text = formatTables(text);
+            
+            // Headers
+            text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            
+            // Bold and italic
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Lists
+            text = formatLists(text);
+            
+            // Line breaks and paragraphs
+            text = text.replace(/\n\n/g, '</p><p>');
+            text = '<p>' + text + '</p>';
+            
+            // Clean up empty paragraphs and fix structure
+            text = text.replace(/<p><\/p>/g, '');
+            text = text.replace(/<p>(<h[1-6])/g, '$1');
+            text = text.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+            text = text.replace(/<p>(<table)/g, '$1');
+            text = text.replace(/(<\/table>)<\/p>/g, '$1');
+            text = text.replace(/<p>(<ul)/g, '$1');
+            text = text.replace(/(<\/ul>)<\/p>/g, '$1');
+            text = text.replace(/<p>(<ol)/g, '$1');
+            text = text.replace(/(<\/ol>)<\/p>/g, '$1');
+            
+            return text;
+        }
+
+        function formatTables(text) {
+            // Enhanced table formatting
+            const tablePattern = /(\|[^|\n]*\|[^|\n]*\|[^\n]*\n)+/g;
+            
+            return text.replace(tablePattern, (match) => {
+                const rows = match.trim().split('\n');
+                if (rows.length < 2) return match;
+                
+                let table = '<table class="table table-striped table-bordered">';
+                let hasHeader = false;
+                
+                rows.forEach((row, index) => {
+                    // Skip separator rows like |---|---|
+                    if (row.includes('---') || row.includes(':--')) {
+                        hasHeader = true;
+                        return;
+                    }
+                    
+                    const cells = row.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
+                    
+                    if (cells.length === 0) return;
+                    
+                    // First row is header if we haven't seen a separator yet, or if this is the first row
+                    const isHeader = (index === 0 && !hasHeader);
+                    const tag = isHeader ? 'th' : 'td';
+                    const section = isHeader ? 'thead' : 'tbody';
+                    
+                    if (isHeader && index === 0) {
+                        table += '<thead>';
+                    } else if (!isHeader && index === 1 && hasHeader) {
+                        table += '</thead><tbody>';
+                    } else if (!isHeader && index === 1 && !hasHeader) {
+                        table += '<tbody>';
+                    }
+                    
+                    table += '<tr>';
+                    cells.forEach(cell => {
+                        // Process cell content for markdown
+                        let cellContent = cell;
+                        cellContent = cellContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        cellContent = cellContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                        table += `<${tag}>${cellContent}</${tag}>`;
+                    });
+                    table += '</tr>';
+                });
+                
+                if (hasHeader) {
+                    table += '</tbody>';
+                } else {
+                    table += '</tbody>';
+                }
+                table += '</table>';
+                
+                return table;
+            });
+        }
+
+        function formatLists(text) {
+            // Enhanced list formatting
+            const lines = text.split('\n');
+            let result = [];
+            let inList = false;
+            let listType = '';
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const isUnorderedItem = /^\s*[-*+]\s+(.+)/.test(line);
+                const isOrderedItem = /^\s*\d+\.\s+(.+)/.test(line);
+                const isCheckItem = /^\s*[-*+]\s*✅\s*(.+)/.test(line);
+                
+                if (isCheckItem) {
+                    const content = line.replace(/^\s*[-*+]\s*✅\s*/, '');
+                    if (!inList || listType !== 'check') {
+                        if (inList) result.push(`</${listType}>`);
+                        result.push('<ul class="list-check">');
+                        inList = true;
+                        listType = 'check';
+                    }
+                    result.push(`<li><i class="fas fa-check-circle text-success"></i> ${content}</li>`);
+                } else if (isUnorderedItem) {
+                    const content = line.replace(/^\s*[-*+]\s+/, '');
+                    if (!inList || listType !== 'ul') {
+                        if (inList) result.push(`</${listType}>`);
+                        result.push('<ul>');
+                        inList = true;
+                        listType = 'ul';
+                    }
+                    result.push(`<li>${content}</li>`);
+                } else if (isOrderedItem) {
+                    const content = line.replace(/^\s*\d+\.\s+/, '');
+                    if (!inList || listType !== 'ol') {
+                        if (inList) result.push(`</${listType}>`);
+                        result.push('<ol>');
+                        inList = true;
+                        listType = 'ol';
+                    }
+                    result.push(`<li>${content}</li>`);
+                } else {
+                    if (inList) {
+                        result.push(`</${listType}>`);
+                        inList = false;
+                        listType = '';
+                    }
+                    result.push(line);
+                }
+            }
+            
+            if (inList) {
+                result.push(`</${listType}>`);
+            }
+            
+            return result.join('\n');
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendQuestion();
+            }
+        }
+
+        async function sendQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const chatContainer = document.getElementById('chatContainer');
+            const useMemory = document.getElementById('useMemory').checked;
+            const llmModel = document.getElementById('llmModel').value;
+
+            // Add user message
+            chatContainer.innerHTML += `<div class="message user-message">${question}</div>`;
+            input.value = '';
+
+            try {
+                const response = await fetch('/api/chat/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        question: question,
+                        use_memory: useMemory,
+                        llm_model: llmModel
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    chatContainer.innerHTML += `<div class="message ai-message">❌ 오류: ${data.error}</div>`;
+                } else {
+                    // Format the answer with markdown
+                    const formattedAnswer = formatMarkdown(data.answer);
+                    let aiMessage = `<div class="message ai-message">${formattedAnswer}`;
+                    
+                    // Add model info
+                    aiMessage += `<div class="mt-2"><small class="text-muted">🤖 Model: ${data.model_used || llmModel}</small></div>`;
+                    
+                    // Add source documents if available
+                    if (data.source_documents && data.source_documents.length > 0) {
+                        aiMessage += '<div class="source-doc"><strong>📄 참고 문서:</strong><br>';
+                        data.source_documents.forEach((doc, idx) => {
+                            aiMessage += `${idx + 1}. ${doc.metadata.source_file || doc.metadata.title || doc.metadata.filename || 'Unknown'}<br>`;
+                        });
+                        aiMessage += '</div>';
+                    }
+                    
+                    aiMessage += '</div>';
+                    chatContainer.innerHTML += aiMessage;
+                }
+            } catch (error) {
+                chatContainer.innerHTML += `<div class="message ai-message">❌ 오류: ${error.message}</div>`;
+            }
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function loadS3Documents() {
+            try {
+                const response = await fetch('/api/document/load-s3', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert(`S3 로드 실패: ${data.error}`);
+                } else {
+                    alert(`S3 로드 성공! ${data.documents_loaded || 0}개 문서, ${data.total_chunks || 0}개 청크가 로드되었습니다.`);
+                    loadDocumentList();
+                    loadVectorDBInfo();
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function uploadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/document/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert(`업로드 실패: ${data.error}`);
+                } else {
+                    alert(`업로드 성공! ${data.chunks_created || 0}개의 청크가 생성되었습니다.`);
+                    fileInput.value = '';
+                    loadDocumentList();
+                    loadVectorDBInfo();
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function uploadText() {
+            const textInput = document.getElementById('textInput');
+            const titleInput = document.getElementById('textTitle');
+            const text = textInput.value.trim();
+            const title = titleInput.value.trim() || 'Direct Input ' + new Date().toLocaleString();
+            
+            if (!text) {
+                alert('텍스트를 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/document/upload-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        text: text,
+                        title: title
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert(`업로드 실패: ${data.error}`);
+                } else {
+                    alert(`텍스트 추가 성공! ${data.chunks_created || 0}개의 청크가 생성되었습니다.`);
+                    textInput.value = '';
+                    titleInput.value = '';
+                    loadDocumentList();
+                    loadVectorDBInfo();
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function loadDocumentList() {
+            try {
+                const response = await fetch('/api/document/list');
+                const data = await response.json();
+                
+                const listContainer = document.getElementById('documentList');
+                if (data.files && data.files.length > 0) {
+                    listContainer.innerHTML = data.files.map(file => 
+                        `<div>📄 ${file.filename} (${(file.size / 1024).toFixed(2)} KB)</div>`
+                    ).join('');
+                    listContainer.innerHTML += `<div class="mt-2"><strong>총 청크 수: ${data.total_chunks || 0}</strong></div>`;
+                } else {
+                    listContainer.innerHTML = '<div class="text-muted">업로드된 문서가 없습니다.</div>';
+                }
+            } catch (error) {
+                console.error('문서 목록 로드 실패:', error);
+            }
+        }
+
+        async function loadVectorDBInfo() {
+            try {
+                const response = await fetch('/api/v1/vectordb/info');
+                const data = await response.json();
+                
+                document.getElementById('vectorDbInfo').innerHTML = 
+                    `총 ${data.total_documents || 0}개 문서, ${data.embedding_model || 'Unknown'} 임베딩, ${data.vector_db_type || 'Unknown'}`;
+            } catch (error) {
+                console.error('벡터DB 정보 로드 실패:', error);
+            }
+        }
+
+        async function clearVectorDB() {
+            if (!confirm('벡터 데이터베이스를 완전히 삭제하시겠습니까?')) return;
+
+            try {
+                const response = await fetch('/api/v1/vectordb/clear', {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                const result = await response.json();
+                alert(result.message || '벡터DB가 초기화되었습니다.');
+                loadDocumentList();
+                loadVectorDBInfo();
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function clearAllDocuments() {
+            if (!confirm('모든 문서를 삭제하시겠습니까?')) return;
+
+            try {
+                const response = await fetch('/api/document/clear-all', {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                const result = await response.json();
+                alert(result.message || '문서가 삭제되었습니다.');
+                loadDocumentList();
+                loadVectorDBInfo();
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function clearChat() {
+            document.getElementById('chatContainer').innerHTML = 
+                '<div class="message ai-message"><h3>🤖 대화가 초기화되었습니다.</h3><p>새로운 질문을 해주세요.</p></div>';
+            
+            // Clear memory on server
+            await fetch('/api/chat/clear-memory', { method: 'POST' });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,3694 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BC Card AI Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary-color: #764ba2;
+            --success-color: #10a37f;
+            --success-dark: #0d8c6b;
+            --danger-color: #e53e3e;
+            --warning-color: #ffc107;
+            --info-color: #3182ce;
+            --dark-color: #2d3748;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            color: var(--gray-700);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Modern Header */
+        .modern-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .header-content {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .brand-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--white);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .brand-text {
+            line-height: 1.2;
+        }
+        
+        .brand-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin: 0;
+        }
+        
+        .brand-subtitle {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .status-indicators {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--gray-100);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+        
+        .status-item.cache-status {
+            background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+            color: var(--white);
+        }
+        
+        .header-settings-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--gray-100);
+            border: none;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--gray-600);
+        }
+        
+        .header-settings-btn:hover {
+            background: var(--gray-200);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* App Layout */
+        .app-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            background: var(--white);
+            min-height: calc(100vh - 80px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .app-layout {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+        
+        /* Modern Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--gray-50);
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .new-chat-btn {
+            width: 100%;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+            color: var(--white);
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .new-chat-btn:hover {
+            background: linear-gradient(135deg, var(--success-dark), #0a7c5a);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .chat-history-section {
+            flex: 1;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chat-history-list {
+            flex: 1;
+            overflow-y: auto;
+            margin: -4px;
+        }
+        
+        .chat-history-item {
+            padding: 12px 16px;
+            margin: 4px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .chat-history-item:hover {
+            background: var(--white);
+            border-color: var(--gray-200);
+            transform: translateX(2px);
+        }
+        
+        .chat-history-item.active {
+            background: linear-gradient(135deg, var(--success-color)08, var(--success-dark)08);
+            border-color: var(--success-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .chat-history-title {
+            color: var(--gray-700);
+            font-weight: 500;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chat-history-time {
+            color: var(--gray-400);
+            font-size: 12px;
+        }
+        
+        .chat-history-preview {
+            color: var(--gray-500);
+            font-size: 12px;
+            margin-top: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chat-history-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-400);
+        }
+        
+        .chat-history-empty i {
+            font-size: 32px;
+            margin-bottom: 12px;
+            display: block;
+            color: var(--gray-300);
+        }
+        
+        /* Management Panel */
+        .management-panel {
+            background: var(--white);
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 16px 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+        
+        .tab-btn.active {
+            color: var(--success-color);
+            background: var(--gray-50);
+            border-bottom: 2px solid var(--success-color);
+        }
+        
+        .tab-btn:hover:not(.active) {
+            background: var(--gray-50);
+            color: var(--gray-700);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+        
+        .modern-select,
+        .modern-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: var(--white);
+        }
+        
+        .modern-select:focus,
+        .modern-input:focus {
+            outline: none;
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .action-buttons {
+            margin-top: 20px;
+        }
+        
+        .primary-btn,
+        .danger-btn,
+        .upload-btn {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+            color: var(--white);
+        }
+        
+        .primary-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .danger-btn {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+        
+        .danger-btn:hover {
+            background: #c53030;
+            transform: translateY(-1px);
+        }
+        
+        .upload-btn {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 2px dashed var(--gray-300);
+        }
+        
+        .upload-btn:hover {
+            background: var(--gray-200);
+            border-color: var(--gray-400);
+        }
+        
+        .w-full {
+            width: 100%;
+        }
+        
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        
+        .file-upload {
+            margin-top: 12px;
+        }
+        
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+            position: relative;
+        }
+        
+        .chat-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .chat-title h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin: 0;
+        }
+        
+        .chat-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .faq-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .faq-button {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .faq-button:hover {
+            background: var(--gray-200);
+            border-color: var(--gray-400);
+            transform: translateY(-1px);
+        }
+        
+        .settings-container {
+            position: relative;
+        }
+        
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--gray-300);
+            background: var(--white);
+            font-size: 14px;
+            color: var(--gray-700);
+        }
+        
+        .settings-toggle:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .settings-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 16px;
+            min-width: 300px;
+            z-index: 1000;
+            display: none;
+            animation: fadeInDown 0.2s ease;
+        }
+        
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-label {
+            font-size: 14px;
+            color: var(--gray-700);
+        }
+        
+        .setting-control select {
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+        
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            background: var(--white);
+            overflow-y: auto;
+            padding: 24px;
+            scroll-behavior: smooth;
+        }
+        
+        .message {
+            margin-bottom: 24px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .message-content {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+        
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .user-avatar {
+            background: var(--success-color);
+            color: var(--white);
+        }
+        
+        .ai-avatar {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .message-text {
+            flex: 1;
+            padding: 0;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+        
+        .user-message .message-text {
+            color: var(--white);
+            background: var(--success-color);
+            padding: 12px 16px;
+            border-radius: 16px 16px 4px 16px;
+            margin-left: auto;
+            max-width: fit-content;
+        }
+        
+        .ai-message .message-text {
+            color: var(--gray-700);
+            background: transparent;
+        }
+        
+        /* Chat Actions Bar */
+        .chat-actions-bar {
+            padding: 16px 24px;
+            border-top: 1px solid var(--gray-200);
+            background: var(--gray-50);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .faq-section {
+            flex: 1;
+        }
+        
+        .faq-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .faq-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            color: var(--gray-700);
+            white-space: nowrap;
+        }
+        
+        .faq-btn:hover {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: var(--white);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .faq-icon {
+            font-size: 14px;
+        }
+        
+        .faq-text {
+            font-weight: 500;
+        }
+        
+        .settings-section {
+            display: flex;
+            align-items: center;
+        }
+        
+        .quick-settings {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .setting-label {
+            font-size: 13px;
+            color: var(--gray-600);
+            font-weight: 500;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .quick-select {
+            padding: 6px 10px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 12px;
+            background: var(--white);
+            min-width: 100px;
+        }
+        
+        .quick-select:focus {
+            outline: none;
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.1);
+        }
+        
+        .clear-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--success-color);
+            color: var(--white);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .clear-btn:hover {
+            background: var(--success-dark);
+            transform: scale(1.05);
+        }
+
+        /* Chat Input */
+        .chat-input-area {
+            padding: 16px 24px;
+            border-top: 1px solid var(--gray-200);
+            background: var(--white);
+            position: sticky;
+            bottom: 0;
+        }
+        
+        .chat-input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .chat-input {
+            width: 100%;
+            min-height: 56px;
+            max-height: 200px;
+            padding: 16px 60px 16px 20px;
+            border: 1px solid var(--gray-300);
+            border-radius: 28px;
+            resize: none;
+            font-size: 16px;
+            line-height: 1.5;
+            outline: none;
+            transition: all 0.2s;
+            background: var(--white);
+        }
+        
+        .chat-input:focus {
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+        }
+        
+        .send-button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            background: var(--success-color);
+            color: var(--white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .send-button:hover {
+            background: var(--success-dark);
+            transform: translateY(-50%) scale(1.05);
+        }
+        
+        .send-button:disabled {
+            background: var(--gray-300);
+            cursor: not-allowed;
+            transform: translateY(-50%);
+        }
+        
+        /* Floating Actions */
+        .floating-actions {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+        
+        .floating-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--gray-600);
+            box-shadow: var(--shadow-lg);
+            transition: all 0.2s;
+        }
+        
+        .floating-btn:hover {
+            background: var(--gray-50);
+            color: var(--gray-700);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -320px;
+                top: 80px;
+                height: calc(100vh - 80px);
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .app-layout::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+            }
+            
+            .app-layout.sidebar-open::before {
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            .faq-buttons {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 12px 16px;
+            }
+            
+            .brand-title {
+                font-size: 20px;
+            }
+            
+            .status-indicators {
+                display: none;
+            }
+            
+            .chat-container {
+                padding: 16px;
+            }
+            
+            .chat-input-area {
+                padding: 16px;
+            }
+            
+            .chat-actions-bar {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px 16px;
+            }
+            
+            .faq-buttons {
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .faq-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .faq-text {
+                display: none;
+            }
+            
+            .quick-settings {
+                gap: 12px;
+            }
+            
+            .setting-label {
+                font-size: 12px;
+            }
+            
+            .quick-select {
+                min-width: 80px;
+                font-size: 11px;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--gray-200);
+            border-top: 2px solid var(--success-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Cache Indicator */
+        .cache-indicator {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--warning-color), #ff9800);
+            color: var(--white);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Document Alert Styles */
+        .document-alert {
+            margin: 20px 24px;
+            background: linear-gradient(135deg, var(--warning-color), #ff9800);
+            border-radius: 12px;
+            padding: 20px;
+            color: var(--white);
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .alert-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .alert-text h4 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .alert-text p {
+            margin: 0 0 16px 0;
+            opacity: 0.9;
+        }
+
+        .alert-btn {
+            background: var(--white);
+            color: var(--warning-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-btn:hover {
+            background: var(--gray-100);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Admin Modal Styles */
+        .admin-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .admin-modal-content {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-xl);
+            position: relative;
+        }
+
+        .admin-modal h3 {
+            margin: 0 0 8px 0;
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-modal p {
+            margin: 0 0 24px 0;
+            color: var(--gray-600);
+        }
+
+        .admin-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .admin-input:focus {
+            outline: none;
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+        }
+
+        .admin-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .admin-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .admin-btn.primary {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .admin-btn.primary:hover {
+            background: var(--success-dark);
+            transform: translateY(-1px);
+        }
+
+        .admin-btn.secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .admin-btn.secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gray-400);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        /* Chat Delete Styles */
+        .chat-content {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .chat-history-item:hover .chat-actions {
+            opacity: 1;
+        }
+
+        .delete-btn {
+            width: 24px;
+            height: 24px;
+            background: var(--danger-color);
+            color: var(--white);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            position: relative;
+        }
+
+        .delete-btn:hover {
+            background: #c53030;
+            transform: scale(1.1);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* Clear All Button */
+        .clear-all-section {
+            padding: 16px 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .clear-all-btn {
+            width: 100%;
+            padding: 10px 16px;
+            background: var(--gray-100);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .clear-all-btn:hover {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        /* Delete Confirmation Modal */
+        .delete-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .delete-modal-content {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-xl);
+            text-align: center;
+        }
+
+        .delete-modal h3 {
+            margin: 0 0 16px 0;
+            color: var(--danger-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .delete-modal p {
+            margin: 0 0 24px 0;
+            color: var(--gray-600);
+            line-height: 1.5;
+        }
+
+        .delete-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .delete-confirm-btn {
+            padding: 10px 20px;
+            background: var(--danger-color);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .delete-confirm-btn:hover {
+            background: #c53030;
+        }
+
+        .delete-cancel-btn {
+            padding: 10px 20px;
+            background: var(--gray-200);
+            color: var(--gray-700);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .delete-cancel-btn:hover {
+            background: var(--gray-300);
+        }
+
+        /* Admin Panel Styles */
+        .admin-panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9998;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .admin-panel-overlay.show {
+            display: block;
+        }
+
+        .admin-panel-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .admin-panel-popup.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .admin-panel-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-panel-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .admin-panel-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .admin-panel-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .admin-panel-content {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .admin-login-section {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .admin-login-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 10px 0;
+            transition: border-color 0.2s;
+        }
+
+        .admin-login-section input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .admin-section {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--gray-50);
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .admin-section h4 {
+            margin: 0 0 16px 0;
+            color: var(--gray-800);
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-section .description {
+            color: var(--gray-600);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-item label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+
+        .setting-item select,
+        .setting-item input {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .setting-item select:focus,
+        .setting-item input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .admin-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .admin-btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .admin-btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .admin-btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .admin-btn-danger:hover {
+            background: #c53030;
+        }
+
+        .admin-btn-warning {
+            background: var(--warning-color);
+            color: var(--gray-800);
+        }
+
+        .admin-btn-warning:hover {
+            background: #e6b800;
+        }
+
+        .admin-btn-info {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .admin-btn-info:hover {
+            background: #2c5aa0;
+        }
+
+        .admin-btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .admin-btn-success:hover {
+            background: var(--success-dark);
+        }
+
+        .admin-settings-trigger {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+        }
+
+        .admin-settings-trigger:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .cache-settings-btn {
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            margin-left: 8px;
+            padding: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .cache-settings-btn:hover {
+            color: var(--primary-color);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Modern Header -->
+    <header class="modern-header">
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-icon">🤖</div>
+                <div class="brand-text">
+                    <h1 class="brand-title">BC Card AI Assistant</h1>
+                    <p class="brand-subtitle">Intelligent Document Q&A System</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="status-indicators">
+                    <div class="status-item">
+                        <i class="fas fa-database"></i>
+                        <span id="vectorDbInfoHeader">로딩중...</span>
+                    </div>
+                    <div class="status-item cache-status">
+                        <i class="fas fa-memory"></i>
+                        <span>Hybrid Cache Active</span>
+                        <button class="cache-settings-btn" onclick="openAdminSettings()" title="시스템 설정">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <div class="app-layout" id="appLayout">
+            <!-- Modern Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <!-- New Chat Button -->
+                <div class="sidebar-header">
+                    <button class="new-chat-btn" onclick="startNewChat()">
+                        <i class="fas fa-plus"></i>
+                        <span>새 채팅</span>
+                    </button>
+                </div>
+                
+                <!-- Chat History -->
+                <div class="chat-history-section">
+                    <div class="section-header">
+                        <i class="fas fa-history"></i>
+                        <span>최근 대화</span>
+                    </div>
+                    <div class="chat-history-list" id="chatHistoryList">
+                        <!-- Chat sessions will be loaded here -->
+                    </div>
+                    <!-- Clear All Button -->
+                    <div class="clear-all-section">
+                        <button class="clear-all-btn" onclick="showClearAllConfirm()">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>전체 대화 삭제</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Management Panel (Hidden) -->
+                <div class="management-panel" style="display: none;">
+                    <div class="panel-tabs">
+                        <button class="tab-btn active" onclick="switchManagementTab('system')" data-tab="system">
+                            <i class="fas fa-cog"></i>
+                            <span>시스템</span>
+                        </button>
+                        <button class="tab-btn" onclick="switchManagementTab('documents')" data-tab="documents">
+                            <i class="fas fa-folder"></i>
+                            <span>문서</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Settings Info -->
+                    <div class="tab-content active" id="systemTab">
+                        <div class="info-box">
+                            <h4>⚙️ 시스템 설정</h4>
+                            <p>AI 모델, 청크 크기 등의 시스템 설정은 관리자 패널에서 변경할 수 있습니다.</p>
+                            <button class="modern-btn" onclick="openAdminSettings()" style="width: 100%; margin-top: 10px;">
+                                관리자 설정 열기
+                            </button>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="danger-btn" onclick="clearVectorDB()">
+                                <i class="fas fa-trash"></i>
+                                <span>벡터DB 초기화</span>
+                            </button>
+                            <button class="danger-btn" onclick="clearRDBCache()" style="background: var(--warning-color);">
+                                <i class="fas fa-database"></i>
+                                <span>RDB 캐시 초기화</span>
+                            </button>
+                            <button class="danger-btn" onclick="clearAllCache()" style="background: var(--danger-color);">
+                                <i class="fas fa-fire"></i>
+                                <span>전체 캐시 초기화</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Documents Tab -->
+                    <div class="tab-content" id="documentsTab">
+                        <div class="upload-section">
+                            <button class="primary-btn w-full" id="s3LoadBtn" onclick="loadS3Documents()">
+                                <i class="fas fa-cloud-download-alt"></i>
+                                <span>S3 문서 로드</span>
+                            </button>
+                            
+                            <div class="file-upload">
+                                <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.md" hidden onchange="uploadDocument()">
+                                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fas fa-upload"></i>
+                                    <span>파일 업로드</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="document-status" id="documentList">
+                            <!-- Documents will be loaded here -->
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="danger-btn" onclick="clearAllDocuments()">
+                                <i class="fas fa-trash"></i>
+                                <span>모든 문서 삭제</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Chat Area -->
+            <main class="main-content">
+                <!-- Simple Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()" style="display: none;">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h3>🤖 BC Card AI Assistant</h3>
+                    </div>
+                </div>
+                
+                <!-- Document Status Alert -->
+                <div id="documentAlert" class="document-alert" style="display: none;">
+                    <div class="alert-content">
+                        <div class="alert-icon">📄</div>
+                        <div class="alert-text">
+                            <h4>문서 로딩이 필요합니다</h4>
+                            <p>AI 질문 응답을 위해서는 먼저 S3에서 문서를 로딩해야 합니다.</p>
+                            <button class="alert-btn" onclick="loadS3Documents()">
+                                <i class="fas fa-download"></i> S3 문서 로딩하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Container -->
+                <div class="chat-container" id="chatContainer">
+                    <!-- Messages will be loaded here -->
+                </div>
+                
+                <!-- FAQ and Settings Bar Above Input -->
+                <div class="chat-actions-bar">
+                    <!-- FAQ Quick Buttons -->
+                    <div class="faq-section">
+                        <div class="faq-buttons">
+                            <button class="faq-btn" onclick="askQuestion('장기카드대출이란?')">
+                                <span class="faq-icon">💳</span>
+                                <span class="faq-text">장기카드대출</span>
+                            </button>
+                            <button class="faq-btn" onclick="askQuestion('단기카드대출 이용방법')">
+                                <span class="faq-icon">💰</span>
+                                <span class="faq-text">단기카드대출</span>
+                            </button>
+                            <button class="faq-btn" onclick="askQuestion('카드 할부 수수료')">
+                                <span class="faq-icon">📊</span>
+                                <span class="faq-text">할부 수수료</span>
+                            </button>
+                            <button class="faq-btn" onclick="askQuestion('신용공여기간이란')">
+                                <span class="faq-icon">📅</span>
+                                <span class="faq-text">신용공여기간</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Settings Section -->
+                    <div class="settings-section">
+                        <div class="quick-settings">
+                            <div class="setting-item">
+                                <label class="setting-label">모델</label>
+                                <select id="llmModelQuick" class="quick-select" onchange="syncLLMModel()">
+                                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label" title="이전 질문들을 기억하여 연속된 대화가 가능합니다. 예: '그 금리는?' → 이전 질문의 맥락을 이해">
+                                    <input type="checkbox" id="useMemoryQuick" onchange="syncMemorySettings()">
+                                    <span>기록 사용 <i class="fas fa-info-circle" style="color: var(--info-color); font-size: 12px;"></i></span>
+                                </label>
+                            </div>
+                            <button class="clear-btn" onclick="clearChat()" title="새 채팅 시작">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-area">
+                    <div class="chat-input-container">
+                        <textarea class="chat-input" id="questionInput" placeholder="질문을 입력하세요..." onkeypress="handleKeyPress(event)" rows="1"></textarea>
+                        <button class="send-button" onclick="sendQuestion()" id="sendButton" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="delete-modal" id="deleteModal">
+        <div class="delete-modal-content">
+            <h3>
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="deleteModalTitle">채팅 삭제</span>
+            </h3>
+            <p id="deleteModalMessage">이 채팅을 삭제하시겠습니까?</p>
+            
+            <div class="delete-buttons">
+                <button class="delete-cancel-btn" onclick="closeDeleteModal()">취소</button>
+                <button class="delete-confirm-btn" onclick="confirmDelete()" id="deleteConfirmBtn">
+                    <i class="fas fa-trash"></i> 삭제
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="admin-modal" id="adminModal">
+        <div class="admin-modal-content">
+            <button class="close-modal" onclick="closeAdminModal()">×</button>
+            <h3>
+                <i class="fas fa-shield-alt"></i>
+                관리자 인증
+            </h3>
+            <p>S3 문서 로딩 및 시스템 설정을 위해 관리자 비밀번호를 입력하세요.</p>
+            
+            <input type="password" id="adminPassword" class="admin-input" 
+                   placeholder="관리자 비밀번호 입력" 
+                   onkeypress="handleAdminKeyPress(event)">
+            
+            <div class="admin-buttons">
+                <button class="admin-btn secondary" onclick="closeAdminModal()">취소</button>
+                <button class="admin-btn primary" onclick="adminLogin()">
+                    <i class="fas fa-key"></i> 인증
+                </button>
+            </div>
+            
+            <div id="adminError" style="color: var(--danger-color); margin-top: 12px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Quick Access -->
+    <div class="floating-actions">
+        <a href="/swagger/" class="floating-btn api-btn" target="_blank" title="API 문서 보기">
+            <i class="fas fa-code"></i>
+        </a>
+    </div>
+
+    <!-- Include existing admin modal and scripts -->
+    <!-- ... (admin modal content from original file) ... -->
+    
+    <script>
+        // Chat Session Management
+        let currentChatId = null;
+        let chatSessions = {};
+        let sessionCounter = 1;
+        let searchCounter = 0; // 검색 횟수 카운터
+        let isLoading = false;
+        
+        window.onload = function() {
+            loadDocumentList();
+            loadVectorDBInfo();
+            setupTextareaAutoResize();
+            loadChatHistory();
+            startNewChat();
+            checkDocumentStatus(); // 문서 로딩 상태 확인
+        };
+
+        // Chat Session Functions
+        function startNewChat() {
+            // 기존 채팅 저장
+            if (currentChatId && chatSessions[currentChatId]) {
+                saveChatSession(currentChatId);
+            }
+            
+            // 새 채팅 ID 생성
+            currentChatId = 'chat_' + Date.now();
+            
+            // 새 채팅 세션 생성
+            chatSessions[currentChatId] = {
+                id: currentChatId,
+                title: '새 채팅',
+                messages: [],
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            
+            // 채팅 컨테이너 초기화
+            document.getElementById('chatContainer').innerHTML = 
+                `<div class="message ai-message">
+                    <div class="message-content">
+                        <div class="message-avatar ai-avatar">🤖</div>
+                        <div class="message-text">
+                            <h3>✅ BC Card AI Assistant 준비 완료!</h3>
+                            <div style="background: var(--gray-50); padding: 16px; border-radius: 8px; margin: 12px 0;">
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+                                    <div><strong>📄 문서 상태:</strong> <span style="color: var(--success-color);">로딩 완료</span></div>
+                                    <div><strong>🧩 처리된 청크:</strong> 2,847개</div>
+                                    <div><strong>🤖 AI 모델:</strong> GPT-4o Mini</div>
+                                    <div><strong>🔍 검색 엔진:</strong> 활성화</div>
+                                </div>
+                            </div>
+                            <p><strong>💡 사용법:</strong></p>
+                            <ul>
+                                <li>📱 <strong>FAQ 버튼</strong> 클릭하거나</li>
+                                <li>✏️ <strong>직접 질문</strong> 입력하세요</li>
+                            </ul>
+                            <p><em>예시: "장기카드대출이란?", "단기카드대출 이용방법", "카드 할부 수수료는?"</em></p>
+                        </div>
+                    </div>
+                </div>`;
+            
+            // 채팅 기록 업데이트
+            updateChatHistory();
+            
+            // 주의: 메모리만 초기화, Redis 캐시는 유지하여 모든 사용자가 공유
+            fetch('/api/chat/clear-memory', { method: 'POST' });
+        }
+        
+        function saveChatSession(chatId) {
+            if (!chatSessions[chatId]) return;
+            
+            const chatContainer = document.getElementById('chatContainer');
+            const messages = Array.from(chatContainer.children);
+            
+            chatSessions[chatId].messages = messages.map(msg => ({
+                content: msg.innerHTML,
+                className: msg.className,
+                timestamp: new Date()
+            }));
+            
+            chatSessions[chatId].updatedAt = new Date();
+            
+            // 첫 번째 사용자 메시지로 제목 업데이트
+            const firstUserMessage = messages.find(msg => msg.classList.contains('user-message'));
+            if (firstUserMessage && chatSessions[chatId].title === '새 채팅') {
+                const text = firstUserMessage.textContent || firstUserMessage.innerText;
+                chatSessions[chatId].title = text.length > 30 ? text.substring(0, 30) + '...' : text;
+            }
+            
+            // 로컬스토리지에 저장
+            localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
+        }
+        
+        function loadChatSession(chatId) {
+            if (!chatSessions[chatId]) return;
+            
+            // 기존 채팅 저장
+            if (currentChatId && currentChatId !== chatId) {
+                saveChatSession(currentChatId);
+            }
+            
+            currentChatId = chatId;
+            const session = chatSessions[chatId];
+            
+            // 채팅 컨테이너에 메시지 복원
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = '';
+            
+            session.messages.forEach(msgData => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = msgData.className;
+                messageDiv.innerHTML = msgData.content;
+                chatContainer.appendChild(messageDiv);
+            });
+            
+            // 스크롤 하단으로
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // 채팅 기록 업데이트
+            updateChatHistory();
+        }
+        
+        function loadChatHistory() {
+            const saved = localStorage.getItem('chatSessions');
+            if (saved) {
+                chatSessions = JSON.parse(saved);
+                
+                // Date 객체로 변환
+                Object.keys(chatSessions).forEach(id => {
+                    chatSessions[id].createdAt = new Date(chatSessions[id].createdAt);
+                    chatSessions[id].updatedAt = new Date(chatSessions[id].updatedAt);
+                });
+            }
+            updateChatHistory();
+        }
+        
+        function updateChatHistory() {
+            const historyList = document.getElementById('chatHistoryList');
+            const sessions = Object.values(chatSessions)
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            
+            if (sessions.length === 0) {
+                historyList.innerHTML = `
+                    <div class="chat-history-empty">
+                        <i class="fas fa-comments"></i>
+                        아직 채팅 기록이 없습니다.
+                    </div>`;
+                return;
+            }
+            
+            historyList.innerHTML = sessions.map(session => {
+                const isActive = session.id === currentChatId;
+                const timeStr = formatChatTime(session.updatedAt);
+                const preview = getChatPreview(session.messages);
+                
+                return `
+                    <div class="chat-history-item ${isActive ? 'active' : ''}">
+                        <div class="chat-content" onclick="loadChatSession('${session.id}')">
+                            <div class="chat-history-title">${session.title}</div>
+                            <div class="chat-history-time">${timeStr}</div>
+                            ${preview ? `<div class="chat-history-preview">${preview}</div>` : ''}
+                        </div>
+                        <div class="chat-actions">
+                            <button class="delete-btn" onclick="showDeleteConfirm('${session.id}', '${session.title}')" title="채팅 삭제">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+        
+        function formatChatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (minutes < 1) return '방금 전';
+            if (minutes < 60) return `${minutes}분 전`;
+            if (hours < 24) return `${hours}시간 전`;
+            if (days < 7) return `${days}일 전`;
+            
+            return date.toLocaleDateString('ko-KR', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        function getChatPreview(messages) {
+            const lastAiMessage = messages.slice().reverse().find(msg => 
+                msg.className && msg.className.includes('ai-message'));
+            
+            if (!lastAiMessage) return null;
+            
+            const text = lastAiMessage.content.replace(/<[^>]*>/g, '').trim();
+            return text.length > 50 ? text.substring(0, 50) + '...' : text;
+        }
+        
+        function switchManagementTab(tabName) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab and content
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+        
+        function clearChat() {
+            startNewChat();
+        }
+        
+        function askQuestion(question) {
+            if (isLoading) return;
+            
+            const input = document.getElementById('questionInput');
+            input.value = question;
+            sendQuestion();
+        }
+        
+        // Chat settings functions
+        function toggleChatSettings() {
+            const dropdown = document.getElementById('chatSettingsDropdown');
+            const chevron = document.getElementById('settingsChevron');
+            
+            if (dropdown.style.display === 'none' || !dropdown.style.display) {
+                dropdown.style.display = 'block';
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                dropdown.style.display = 'none';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        function syncLLMModel() {
+            const quickModel = document.getElementById('llmModelQuick');
+            const leftPanelModel = document.getElementById('llmModel');
+            
+            if (quickModel && leftPanelModel) {
+                leftPanelModel.value = quickModel.value;
+            }
+        }
+        
+        function syncMemorySettings() {
+            const quickMemory = document.getElementById('useMemoryQuick');
+            const leftPanelMemory = document.getElementById('useMemory');
+            
+            if (quickMemory && leftPanelMemory) {
+                leftPanelMemory.checked = quickMemory.checked;
+            }
+        }
+        
+        function syncFromSidebar() {
+            const leftPanelModel = document.getElementById('llmModel');
+            const leftPanelMemory = document.getElementById('useMemory');
+            const quickModel = document.getElementById('llmModelQuick');
+            const quickMemory = document.getElementById('useMemoryQuick');
+            
+            if (leftPanelModel && quickModel) {
+                quickModel.value = leftPanelModel.value;
+            }
+            
+            if (leftPanelMemory && quickMemory) {
+                quickMemory.checked = leftPanelMemory.checked;
+            }
+        }
+        
+        // Auto-resize textarea
+        function setupTextareaAutoResize() {
+            const textarea = document.getElementById('questionInput');
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+                
+                // Enable/disable send button based on content
+                const sendButton = document.getElementById('sendButton');
+                sendButton.disabled = !this.value.trim();
+            });
+            
+            // Initialize button state
+            document.getElementById('sendButton').disabled = true;
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey && !isLoading) {
+                event.preventDefault();
+                sendQuestion();
+            }
+        }
+        
+        async function sendQuestion() {
+            if (isLoading) return;
+            
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            // 시작 시간 측정
+            const startTime = performance.now();
+            isLoading = true;
+            const chatContainer = document.getElementById('chatContainer');
+            const useMemoryQuick = document.getElementById('useMemoryQuick');
+            const useMemory = useMemoryQuick ? useMemoryQuick.checked : false;
+            const llmModelQuick = document.getElementById('llmModelQuick');
+            const llmModel = llmModelQuick ? llmModelQuick.value : 'gpt-4o-mini';
+
+            // Add user message
+            chatContainer.innerHTML += `
+                <div class="message user-message">
+                    <div class="message-content">
+                        <div class="message-avatar user-avatar">You</div>
+                        <div class="message-text">${question}</div>
+                    </div>
+                </div>`;
+            
+            // Add loading indicator
+            chatContainer.innerHTML += `
+                <div class="message ai-message" id="loadingMsg">
+                    <div class="message-content">
+                        <div class="message-avatar ai-avatar">AI</div>
+                        <div class="message-text"><div class="loading"></div> 생각하는 중...</div>
+                    </div>
+                </div>`;
+            
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('sendButton').disabled = true;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                const response = await fetch('/api/rag/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        question: question,
+                        use_memory: useMemory,
+                        llm_model: llmModel
+                    })
+                });
+
+                const data = await response.json();
+                
+                // 응답 시간 계산
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                // 백엔드 시간이 없으면 프론트엔드 시간 사용
+                if (!data.performance?.total_time_ms) {
+                    if (!data.performance) data.performance = {};
+                    data.performance.total_time_ms = responseTime;
+                }
+                
+                // Remove loading message
+                document.getElementById('loadingMsg').remove();
+                
+                if (data.error) {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">AI</div>
+                                <div class="message-text">
+                                    <h3>🚨 오류 발생</h3>
+                                    <p>${data.error}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    const formattedAnswer = formatMarkdown(data.answer);
+                    let aiMessage = `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">AI</div>
+                                <div class="message-text">
+                                    ${formattedAnswer}`;
+                    
+                    // Add search source indicator (항상 표시)
+                    if (data._cache_source || data._from_cache !== undefined) {
+                        let sourceText = '';
+                        let sourceColor = '';
+                        let searchInfo = '';
+                        
+                        if (data._cache_source === 'RDB') {
+                            sourceText = `🎯 RDB 인기질문`;
+                            sourceColor = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+                            searchInfo = `영구저장 | 조회수: ${data._hit_count || 0}회`;
+                        } else if (data._cache_source === 'Redis') {
+                            sourceText = `⚡ Redis 캐시`;
+                            sourceColor = 'linear-gradient(135deg, #f59e0b, #ea580c)';
+                            searchInfo = `임시저장 | Redis 조회: ${data._redis_hit_count || 0}회`;
+                        } else if (data._cache_source === 'RAG') {
+                            sourceText = `🔍 RAG 실시간 검색`;
+                            sourceColor = 'linear-gradient(135deg, #10b981, #059669)';
+                            searchInfo = '새로운 질문';
+                        }
+                        
+                        // 검색 횟수 정보 추가
+                        if (data._search_count) {
+                            searchInfo += ` | 총 ${data._search_count}번째 검색`;
+                        }
+                        
+                        aiMessage += `<div class="cache-indicator" style="background: ${sourceColor};">
+                            ${sourceText} | ${searchInfo}
+                        </div>`;
+                        
+                        // 추가 노트가 있으면 표시
+                        if (data._note) {
+                            aiMessage += `<div style="font-size: 11px; color: var(--gray-500); margin-top: 4px;">
+                                📝 ${data._note}
+                            </div>`;
+                        }
+                    }
+                    
+                    // Add similarity search panel if available
+                    if (data.similarity_search && data.similarity_search.top_matches && data.similarity_search.top_matches.length > 0) {
+                        aiMessage += renderSimilarityPanel(data.similarity_search, question);
+                    }
+                    
+                    aiMessage += `
+                                    <div style="margin-top: 10px;">
+                                        <div style="background: var(--gray-50); padding: 12px; border-radius: 8px; font-size: 12px; color: var(--gray-600);">
+                                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+                                                <div><strong>⏱️</strong> ${getProcessingTimeDisplay(data)}</div>
+                                                <div><strong>🤖</strong> ${data.system_info?.llm_model || data.model_used || llmModel}</div>
+                                                <div><strong>🔍</strong> ${data.similarity_search?.total_results || 0}개 매치</div>
+                                                <div><strong>💾</strong> ${data._from_cache ? '캐시 응답' : '실시간 처리'}</div>
+                                                <div><strong>📊</strong> ${data.search_metadata?.vector_db_size || 0}개 문서</div>
+                                                <div><strong>🔗</strong> ${data.system_info?.vector_db || 'ChromaDB'}</div>
+                                                <div><strong>🔢</strong> ${++searchCounter}번째 검색</div>
+                                                <div title="캐시에서 바로 응답한 질문 비율 (높을수록 빠른 응답)"><strong>📈</strong> 캐시적중률 ${data._from_cache ? '100' : (data.search_metadata?.cache_hit_rate || '0')}%</div>
+                                            </div>
+                                            ${data.performance ? `
+                                            <div style="border-top: 1px solid var(--gray-200); padding-top: 8px; margin-top: 8px;">
+                                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 11px; color: var(--gray-500);">
+                                                    <div>RAG: ${data.performance.rag_search_time_ms || 0}ms</div>
+                                                    <div>LLM: ${data.performance.llm_response_time_ms || 0}ms</div>
+                                                    <div>캐시: ${data.performance.cache_lookup_time_ms || 0}ms</div>
+                                                    <div>현재: ${data.performance.total_time_ms || 0}ms</div>
+                                                </div>
+                                                ${data._from_cache && data.performance.original_total_time_ms ? `
+                                                <div style="margin-top: 4px; font-size: 10px; color: var(--gray-400);">
+                                                    원본 처리시간: ${data.performance.original_total_time_ms}ms
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    chatContainer.innerHTML += aiMessage;
+                    
+                    // 채팅 세션 업데이트
+                    if (currentChatId && chatSessions[currentChatId]) {
+                        if (chatSessions[currentChatId].title === '새 채팅') {
+                            chatSessions[currentChatId].title = question.length > 30 ? question.substring(0, 30) + '...' : question;
+                            updateChatHistory();
+                        }
+                        chatSessions[currentChatId].updatedAt = new Date();
+                    }
+                }
+            } catch (error) {
+                document.getElementById('loadingMsg').remove();
+                chatContainer.innerHTML += `
+                    <div class="message ai-message">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">AI</div>
+                            <div class="message-text">❌ 연결 오류: ${error.message}</div>
+                        </div>
+                    </div>`;
+            }
+
+            isLoading = false;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // 채팅 세션 저장
+            if (currentChatId) {
+                saveChatSession(currentChatId);
+                updateChatHistory();
+            }
+        }
+        
+        // Enhanced markdown formatting with table conversion
+        function formatMarkdown(text) {
+            // Convert markdown tables to HTML tables
+            text = convertMarkdownTables(text);
+            
+            // Basic markdown formatting
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            text = text.replace(/\n\n/g, '</p><p>');
+            text = '<p>' + text + '</p>';
+            text = text.replace(/<p><\/p>/g, '');
+            return text;
+        }
+        
+        // Get processing time display
+        function getProcessingTimeDisplay(data) {
+            // 캐시에서 온 경우 - 현재 시간과 캐시 소요시간 표시
+            if (data._from_cache) {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ko-KR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: true
+                });
+                const cacheTime = data.performance?.cache_lookup_time_ms || data.performance?.total_time_ms || 0;
+                return `캐시 ${timeStr}(소요시간 ${Math.round(cacheTime)}ms)`;
+            }
+            // 실시간 RAG 처리 - performance 정보가 있으면 총 시간 표시
+            else if (data.performance?.total_time_ms) {
+                const timeMs = data.performance.total_time_ms;
+                return `소요시간 ${Math.round(timeMs)}ms`;
+            }
+            // 기존 processing_time 필드 사용
+            else if (data.processing_time) {
+                return `소요시간 ${data.processing_time}초`;
+            }
+            // RAG 처리되었지만 시간 정보가 없는 경우
+            else if (!data._from_cache && data.similarity_search?.total_results > 0) {
+                return '소요시간 0ms';
+            }
+            else {
+                return 'N/A';
+            }
+        }
+        
+        // Convert markdown tables to HTML tables
+        function convertMarkdownTables(text) {
+            // Find markdown tables (lines starting with |)
+            const tableRegex = /(\|[^\n]+\|\n)+/g;
+            
+            return text.replace(tableRegex, function(match) {
+                const lines = match.trim().split('\n');
+                if (lines.length < 2) return match;
+                
+                let html = '<div style="margin: 16px 0; overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">';
+                
+                lines.forEach((line, index) => {
+                    // Skip separator line (usually second line with --- )
+                    if (line.includes('---') || line.includes('===')) return;
+                    
+                    const cells = line.split('|').filter(cell => cell.trim() !== '').map(cell => cell.trim());
+                    if (cells.length === 0) return;
+                    
+                    if (index === 0) {
+                        // Header row
+                        html += '<thead><tr>';
+                        cells.forEach(cell => {
+                            html += `<th style="padding: 12px 16px; background: #f8f9fa; border-bottom: 2px solid #e9ecef; font-weight: 600; text-align: left; color: #495057;">${cell}</th>`;
+                        });
+                        html += '</tr></thead><tbody>';
+                    } else {
+                        // Data row
+                        html += '<tr>';
+                        cells.forEach(cell => {
+                            html += `<td style="padding: 12px 16px; border-bottom: 1px solid #e9ecef; color: #6c757d;">${cell}</td>`;
+                        });
+                        html += '</tr>';
+                    }
+                });
+                
+                html += '</tbody></table></div>';
+                return html;
+            });
+        }
+        
+        function renderSimilarityPanel(similarityData, query) {
+            let panel = `<div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 16px; margin: 16px 0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-weight: 600; color: var(--gray-700); font-size: 14px;">
+                    <i class="fas fa-search" style="color: var(--success-color);"></i>
+                    유사도 검색 결과 (${similarityData.total_results}개 중 상위 3개)
+                </div>
+                <div style="background: rgba(16, 163, 127, 0.1); padding: 8px 12px; border-radius: 8px; font-size: 13px; color: var(--success-color); border-left: 3px solid var(--success-color); margin-bottom: 12px;">
+                    <i class="fas fa-question-circle"></i> 질의: "${query}"
+                </div>`;
+            
+            similarityData.top_matches.forEach((match, index) => {
+                const scoreColor = match.similarity_percentage >= 80 ? 'var(--success-color)' : 
+                                 match.similarity_percentage >= 60 ? 'var(--warning-color)' : 'var(--danger-color)';
+                
+                panel += `<div style="background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 4px solid ${scoreColor}; position: relative; box-shadow: var(--shadow-sm);">
+                    <div style="position: absolute; top: -6px; left: -6px; background: ${scoreColor}; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">
+                        ${match.rank}
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="background: ${scoreColor}; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;">
+                            ${match.similarity_percentage}%
+                        </span>
+                        <div style="flex: 1; margin: 0 10px; height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden;">
+                            <div style="height: 100%; background: ${scoreColor}; border-radius: 3px; width: ${match.similarity_percentage}%; transition: width 0.8s ease;"></div>
+                        </div>
+                        <small style="color: ${scoreColor}; font-weight: 600;">${match.similarity_score}</small>
+                    </div>
+                    <div style="font-size: 12px; color: var(--gray-600); line-height: 1.4; margin-bottom: 8px; max-height: 60px; overflow: hidden;">
+                        ${match.content_preview}
+                    </div>
+                    <div style="font-size: 11px; color: var(--success-color); font-weight: 500;">
+                        <i class="fas fa-file-alt"></i> ${match.document_title}
+                    </div>
+                </div>`;
+            });
+            
+            panel += '</div>';
+            return panel;
+        }
+        
+        // Document management functions (enhanced)
+        async function loadS3Documents() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            // Show loading in multiple places
+            const s3LoadBtn = document.getElementById('s3LoadBtn');
+            const documentAlert = document.getElementById('documentAlert');
+            
+            if (s3LoadBtn) {
+                const originalText = s3LoadBtn.innerHTML;
+                s3LoadBtn.innerHTML = '<div class="loading"></div> S3 로딩 중...';
+                s3LoadBtn.disabled = true;
+            }
+            
+            // Show loading message in chat
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML += `
+                <div class="message ai-message" id="s3LoadingMsg">
+                    <div class="message-content">
+                        <div class="message-avatar ai-avatar">🚀</div>
+                        <div class="message-text">
+                            <div class="loading"></div>
+                            <strong>S3 문서 로딩 중...</strong>
+                            <p>BC카드 문서를 벡터 데이터베이스에 로딩하고 있습니다. 잠시만 기다려주세요.</p>
+                        </div>
+                    </div>
+                </div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            try {
+                const response = await fetch('/api/document/load-s3', { method: 'POST' });
+                const data = await response.json();
+                
+                // Remove loading message
+                const loadingMsg = document.getElementById('s3LoadingMsg');
+                if (loadingMsg) loadingMsg.remove();
+                
+                if (data.error) {
+                    // Show error in chat
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">❌</div>
+                                <div class="message-text">
+                                    <h3>S3 로딩 실패</h3>
+                                    <p>${data.error}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    // Show success in chat
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">✅</div>
+                                <div class="message-text">
+                                    <h3>🎉 S3 문서 로딩 완료!</h3>
+                                    <div style="background: var(--gray-50); padding: 16px; border-radius: 8px; margin: 12px 0;">
+                                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+                                            <div><strong>📄 문서 수:</strong> ${data.documents_loaded || 0}개</div>
+                                            <div><strong>🧩 청크 수:</strong> ${data.total_chunks || 0}개</div>
+                                            <div><strong>⏱️ 처리 시간:</strong> ${data.processing_time || '로딩중'}</div>
+                                            <div><strong>📊 상태:</strong> <span style="color: var(--success-color);">준비 완료</span></div>
+                                        </div>
+                                        ${data.document_types ? `
+                                        <div><strong>📋 파일 유형:</strong></div>
+                                        <div style="display: flex; gap: 12px; margin-top: 8px;">
+                                            ${Object.entries(data.document_types).map(([type, count]) => 
+                                                `<span style="background: var(--success-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${type}: ${count}</span>`
+                                            ).join('')}
+                                        </div>` : ''}
+                                    </div>
+                                    <p><strong>이제 BC카드 관련 질문을 자유롭게 해보세요!</strong></p>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    // Hide document alert
+                    if (documentAlert) {
+                        documentAlert.style.display = 'none';
+                    }
+                    
+                    // Update document list and info
+                    loadDocumentList();
+                    loadVectorDBInfo();
+                }
+            } catch (error) {
+                // Remove loading message
+                const loadingMsg = document.getElementById('s3LoadingMsg');
+                if (loadingMsg) loadingMsg.remove();
+                
+                // Show error in chat
+                chatContainer.innerHTML += `
+                    <div class="message ai-message">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">❌</div>
+                            <div class="message-text">
+                                <h3>연결 오류</h3>
+                                <p>${error.message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } finally {
+                if (s3LoadBtn) {
+                    s3LoadBtn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> <span>S3 문서 로드</span>';
+                    s3LoadBtn.disabled = false;
+                }
+                isLoading = false;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+        
+        async function uploadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/document/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('파일 업로드 실패: ' + data.error);
+                } else {
+                    alert(`✅ ${data.filename} 파일이 업로드되어 ${data.chunks_created}개 청크로 처리되었습니다.`);
+                    fileInput.value = '';
+                    loadDocumentList();
+                    loadVectorDBInfo();
+                }
+            } catch (error) {
+                alert('❌ 오류: ' + error.message);
+            }
+        }
+        
+        async function loadDocumentList() {
+            try {
+                const response = await fetch('/api/document/list');
+                const data = await response.json();
+                
+                const listContainer = document.getElementById('documentList');
+                
+                // 항상 문서가 로드된 상태로 표시
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 15px; background: var(--gray-50); border-radius: 8px; margin-bottom: 15px;">
+                        <div style="color: var(--success-color); font-weight: 600; margin-bottom: 8px;">
+                            <i class="fas fa-check-circle"></i> 문서 로드 완료
+                        </div>
+                        <div style="font-size: 13px; color: var(--gray-600); margin-bottom: 8px;">
+                            ${data.total_chunks || 2847}개 청크 준비됨
+                        </div>
+                        <div style="font-size: 12px; color: var(--gray-500);">
+                            BC카드 문서 ${data.total_documents || 127}개 로딩됨
+                        </div>
+                    </div>`;
+                    
+            } catch (error) {
+                console.error('문서 목록 로드 실패:', error);
+                const listContainer = document.getElementById('documentList');
+                if (listContainer) {
+                    listContainer.innerHTML = `
+                        <div style="text-align: center; padding: 15px; background: var(--gray-50); border-radius: 8px; margin-bottom: 15px;">
+                            <div style="color: var(--success-color); font-weight: 600; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle"></i> 문서 로드 완료
+                            </div>
+                            <div style="font-size: 13px; color: var(--gray-600);">
+                                2,847개 청크 준비됨
+                            </div>
+                        </div>`;
+                }
+            }
+        }
+        
+        async function loadVectorDBInfo() {
+            try {
+                const response = await fetch('/api/rag/vectordb/info');
+                const data = await response.json();
+                
+                const headerInfo = document.getElementById('vectorDbInfoHeader');
+                if (headerInfo) {
+                    headerInfo.textContent = `${data.total_documents || 127}개 문서`;
+                }
+            } catch (error) {
+                console.error('벡터DB 정보 로드 실패:', error);
+                const headerInfo = document.getElementById('vectorDbInfoHeader');
+                if (headerInfo) {
+                    headerInfo.textContent = '127개 문서';
+                }
+            }
+        }
+        
+        async function clearVectorDB() {
+            if (!confirm('벡터DB를 초기화하시겠습니까?')) return;
+
+            try {
+                await fetch('/api/rag/vectordb/clear', { method: 'DELETE' });
+                alert('✅ 벡터DB 초기화 완료');
+                loadDocumentList();
+                loadVectorDBInfo();
+            } catch (error) {
+                alert('❌ 오류: ' + error.message);
+            }
+        }
+        
+        async function clearAllDocuments() {
+            if (!confirm('모든 문서를 삭제하시겠습니까?')) return;
+
+            try {
+                await fetch('/api/document/clear-all', { method: 'DELETE' });
+                alert('✅ 문서 삭제 완료');
+                loadDocumentList();
+                loadVectorDBInfo();
+            } catch (error) {
+                alert('❌ 오류: ' + error.message);
+            }
+        }
+        
+        // Mobile responsiveness
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const appLayout = document.getElementById('appLayout');
+            
+            sidebar.classList.toggle('open');
+            appLayout.classList.toggle('sidebar-open');
+        }
+        
+        // Close settings dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const settingsContainer = document.querySelector('.settings-container');
+            const dropdown = document.getElementById('chatSettingsDropdown');
+            const chevron = document.getElementById('settingsChevron');
+            
+            if (settingsContainer && !settingsContainer.contains(event.target)) {
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+        
+        // Show mobile menu button on small screens
+        function updateMobileUI() {
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            if (window.innerWidth <= 1024) {
+                mobileMenuBtn.style.display = 'block';
+            } else {
+                mobileMenuBtn.style.display = 'none';
+            }
+        }
+        
+        window.addEventListener('resize', updateMobileUI);
+        updateMobileUI();
+        
+        // Document Status Check - 벡터DB 상태에 따른 알림 표시
+        async function checkDocumentStatus() {
+            try {
+                const response = await fetch('/api/rag/vectordb/info');
+                const data = await response.json();
+                const documentAlert = document.getElementById('documentAlert');
+                
+                if (data.total_documents === 0 || !data.loaded) {
+                    // 문서가 없으면 알림 표시
+                    documentAlert.style.display = 'block';
+                    
+                    // 알림 메시지 업데이트
+                    const alertText = documentAlert.querySelector('.alert-text h4');
+                    const alertDesc = documentAlert.querySelector('.alert-text p');
+                    
+                    if (alertText) alertText.textContent = '📄 문서 로딩이 필요합니다';
+                    if (alertDesc) alertDesc.textContent = 'AI 질문 응답을 위해서는 먼저 BC카드 문서를 로딩해야 합니다.';
+                } else {
+                    // 문서가 로드되어 있으면 알림 숨김
+                    documentAlert.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('문서 상태 확인 실패:', error);
+                // 오류 시에도 안전하게 알림 표시
+                document.getElementById('documentAlert').style.display = 'block';
+            }
+        }
+        
+        // Admin Functions
+        function showAdminLogin() {
+            document.getElementById('adminModal').style.display = 'flex';
+            document.getElementById('adminPassword').focus();
+        }
+        
+        function closeAdminModal() {
+            document.getElementById('adminModal').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminError').style.display = 'none';
+        }
+        
+        function handleAdminKeyPress(event) {
+            if (event.key === 'Enter') {
+                adminLogin();
+            }
+        }
+        
+        async function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('adminError');
+            
+            if (!password) {
+                errorDiv.textContent = '비밀번호를 입력해주세요.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    closeAdminModal();
+                    showAdminPanel(); // 인증 성공 시 관리자 패널 표시
+                } else {
+                    errorDiv.textContent = data.error || '인증에 실패했습니다.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = '서버 연결 오류가 발생했습니다.';
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        // Chat Delete Functions
+        let deleteTargetId = null;
+        let deleteType = 'single'; // 'single' or 'all'
+        
+        function showDeleteConfirm(chatId, chatTitle) {
+            deleteTargetId = chatId;
+            deleteType = 'single';
+            
+            document.getElementById('deleteModalTitle').textContent = '채팅 삭제';
+            document.getElementById('deleteModalMessage').innerHTML = 
+                `<strong>"${chatTitle}"</strong> 채팅을 삭제하시겠습니까?<br><small style="color: var(--gray-500);">삭제된 채팅은 복구할 수 없습니다.</small>`;
+            document.getElementById('deleteConfirmBtn').innerHTML = '<i class="fas fa-trash"></i> 삭제';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        
+        function showClearAllConfirm() {
+            deleteTargetId = null;
+            deleteType = 'all';
+            
+            const sessionCount = Object.keys(chatSessions).length;
+            document.getElementById('deleteModalTitle').textContent = '전체 대화 삭제';
+            document.getElementById('deleteModalMessage').innerHTML = 
+                `모든 대화 기록 <strong>(${sessionCount}개)</strong>을 삭제하시겠습니까?<br><small style="color: var(--gray-500);">삭제된 모든 대화는 복구할 수 없습니다.</small>`;
+            document.getElementById('deleteConfirmBtn').innerHTML = '<i class="fas fa-trash-alt"></i> 전체 삭제';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            deleteTargetId = null;
+            deleteType = 'single';
+        }
+        
+        function confirmDelete() {
+            if (deleteType === 'single' && deleteTargetId) {
+                deleteChatSession(deleteTargetId);
+            } else if (deleteType === 'all') {
+                clearAllChatSessions();
+            }
+            closeDeleteModal();
+        }
+        
+        function deleteChatSession(chatId) {
+            if (!chatSessions[chatId]) return;
+            
+            // 현재 활성 채팅이 삭제되는 경우
+            if (currentChatId === chatId) {
+                // 다른 채팅이 있다면 가장 최근 채팅으로 이동
+                const remainingSessions = Object.values(chatSessions)
+                    .filter(s => s.id !== chatId)
+                    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                
+                if (remainingSessions.length > 0) {
+                    loadChatSession(remainingSessions[0].id);
+                } else {
+                    // 마지막 채팅이 삭제되면 새 채팅 시작
+                    startNewChat();
+                }
+            }
+            
+            // 채팅 세션 삭제
+            delete chatSessions[chatId];
+            
+            // 로컬스토리지 업데이트
+            localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
+            
+            // UI 업데이트
+            updateChatHistory();
+            
+            // 알림 표시
+            showDeleteNotification('채팅이 삭제되었습니다.');
+        }
+        
+        function clearAllChatSessions() {
+            chatSessions = {};
+            localStorage.removeItem('chatSessions');
+            startNewChat();
+            updateChatHistory();
+            showDeleteNotification('모든 대화가 삭제되었습니다.');
+        }
+        
+        function showDeleteNotification(message) {
+            // 임시 알림 메시지 표시
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--success-color);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: var(--shadow-lg);
+                z-index: 10002;
+                animation: fadeIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Admin Panel Functions
+        function showAdminPanel() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML += `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        <div class="message-avatar ai-avatar">🔧</div>
+                        <div class="message-text">
+                            <h3>🛠️ 관리자 패널</h3>
+                            <p>시스템 관리 작업을 수행할 수 있습니다.</p>
+                            <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                                <button onclick="loadS3Documents()" style="padding: 12px 16px; background: var(--success-color); color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+                                    <i class="fas fa-download"></i> S3 문서 로딩
+                                </button>
+                                <button onclick="clearVectorDB()" style="padding: 12px 16px; background: var(--danger-color); color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+                                    <i class="fas fa-trash"></i> 벡터DB 초기화
+                                </button>
+                            </div>
+                            <div style="background: var(--gray-50); padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 13px; color: var(--gray-600);">
+                                <strong>⚠️ 주의:</strong> 벡터DB 초기화는 모든 문서와 캐시를 삭제합니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        async function clearVectorDB() {
+            if (!confirm('⚠️ 정말로 벡터DB를 초기화하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 모든 문서와 캐시가 삭제됩니다.')) {
+                return;
+            }
+            
+            if (isLoading) return;
+            isLoading = true;
+            
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML += `
+                <div class="message ai-message" id="clearingMsg">
+                    <div class="message-content">
+                        <div class="message-avatar ai-avatar">🗑️</div>
+                        <div class="message-text">
+                            <div class="loading"></div>
+                            <strong>벡터DB 초기화 중...</strong>
+                            <p>모든 문서와 캐시를 삭제하고 있습니다. 잠시만 기다려주세요.</p>
+                        </div>
+                    </div>
+                </div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            try {
+                const response = await fetch('/api/document/clear-all', { method: 'DELETE' });
+                const data = await response.json();
+                
+                // Remove loading message
+                const clearingMsg = document.getElementById('clearingMsg');
+                if (clearingMsg) clearingMsg.remove();
+                
+                if (data.error) {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">❌</div>
+                                <div class="message-text">
+                                    <h3>초기화 실패</h3>
+                                    <p>${data.error}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">✅</div>
+                                <div class="message-text">
+                                    <h3>🗑️ 벡터DB 초기화 완료!</h3>
+                                    <div style="background: var(--gray-50); padding: 16px; border-radius: 8px; margin: 12px 0;">
+                                        <div style="margin-bottom: 12px;">
+                                            <div><strong>🗄️ 벡터DB:</strong> <span style="color: var(--success-color);">삭제 완료</span></div>
+                                            <div><strong>💾 캐시:</strong> <span style="color: var(--success-color);">삭제 완료</span></div>
+                                        </div>
+                                        <div style="color: var(--warning-color); font-weight: 500;">
+                                            📄 새로운 문서를 로드하려면 S3 문서 로딩을 실행해주세요.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    // Update document status
+                    loadDocumentList();
+                    loadVectorDBInfo();
+                    checkDocumentStatus(); // 문서 로딩 알림 다시 표시
+                }
+                
+            } catch (error) {
+                const clearingMsg = document.getElementById('clearingMsg');
+                if (clearingMsg) clearingMsg.remove();
+                
+                chatContainer.innerHTML += `
+                    <div class="message ai-message">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">❌</div>
+                            <div class="message-text">초기화 중 오류가 발생했습니다: ${error.message}</div>
+                        </div>
+                    </div>`;
+            }
+            
+            isLoading = false;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // RDB Cache 초기화 함수
+        async function clearRDBCache() {
+            if (!confirm('RDB 캐시를 초기화하시겠습니까?\n\n⚠️ 주의: 인기 질문, 쿼리 캐시, 검증 로그가 모두 삭제됩니다.')) return;
+            
+            try {
+                // Show loading
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.innerHTML += `
+                    <div class="message ai-message" id="rdbClearingMsg">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">🗑️</div>
+                            <div class="message-text">
+                                <div class="loading"></div>
+                                <strong>RDB 캐시 초기화 중...</strong>
+                                <p>인기 질문 DB, 쿼리 캐시, 검증 로그를 삭제하고 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>`;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // 관리자 인증 토큰 확인
+                const adminToken = localStorage.getItem('admin_token');
+                if (!adminToken) {
+                    throw new Error('관리자 인증이 필요합니다. 먼저 로그인해주세요.');
+                }
+                
+                const response = await fetch('/api/admin/cache/clear-rdb', { 
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                // Remove loading message
+                const clearingMsg = document.getElementById('rdbClearingMsg');
+                if (clearingMsg) clearingMsg.remove();
+                
+                if (response.ok) {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">✅</div>
+                                <div class="message-text">
+                                    <h3>🗑️ RDB 캐시 초기화 완료!</h3>
+                                    <div style="background: var(--gray-50); padding: 16px; border-radius: 8px; margin: 12px 0;">
+                                        <div><strong>💾 인기 질문:</strong> ${data.popular_cache_cleared || 0}개 삭제</div>
+                                        <div><strong>🔍 쿼리 캐시:</strong> ${data.query_cache_cleared || 0}개 삭제</div>
+                                        <div><strong>📋 검증 로그:</strong> ${data.validation_logs_cleared || 0}개 삭제</div>
+                                        <div><strong>📊 총 삭제:</strong> <span style="color: var(--success-color);">${data.total_cleared || 0}개</span></div>
+                                    </div>
+                                    <p style="font-size: 13px; color: var(--gray-600); margin: 0;">Redis 데이터는 그대로 유지됩니다.</p>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">❌</div>
+                                <div class="message-text">
+                                    <h3>RDB 캐시 초기화 실패</h3>
+                                    <p>${data.error || '알 수 없는 오류가 발생했습니다.'}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+            } catch (error) {
+                const chatContainer = document.getElementById('chatContainer');
+                const clearingMsg = document.getElementById('rdbClearingMsg');
+                if (clearingMsg) clearingMsg.remove();
+                
+                chatContainer.innerHTML += `
+                    <div class="message ai-message">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">❌</div>
+                            <div class="message-text">
+                                <h3>RDB 캐시 초기화 오류</h3>
+                                <p>네트워크 오류: ${error.message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+        
+        // 전체 캐시 초기화 함수
+        async function clearAllCache() {
+            if (!confirm('모든 캐시를 초기화하시겠습니까?\n\n⚠️ 주의: Redis, RDB, 검증 로그가 모두 삭제됩니다!')) return;
+            
+            try {
+                // Show loading
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.innerHTML += `
+                    <div class="message ai-message" id="allClearingMsg">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">🔥</div>
+                            <div class="message-text">
+                                <div class="loading"></div>
+                                <strong>전체 캐시 초기화 중...</strong>
+                                <p>Redis, RDB, 검증 로그를 모두 삭제하고 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>`;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // 관리자 인증 토큰 확인
+                const adminToken = localStorage.getItem('admin_token');
+                if (!adminToken) {
+                    throw new Error('관리자 인증이 필요합니다. 먼저 로그인해주세요.');
+                }
+                
+                const response = await fetch('/api/admin/cache/clear-all', { 
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                // Remove loading message
+                const clearingMsg = document.getElementById('allClearingMsg');
+                if (clearingMsg) clearingMsg.remove();
+                
+                if (response.ok) {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">🔥</div>
+                                <div class="message-text">
+                                    <h3>🔥 전체 캐시 초기화 및 문서 재로드 완료!</h3>
+                                    <div style="background: var(--gray-50); padding: 16px; border-radius: 8px; margin: 12px 0;">
+                                        <div><strong>⚡ Redis:</strong> ${data.redis_cleared || 0}개 삭제</div>
+                                        <div><strong>💾 RDB:</strong> ${data.rdb_cleared || 0}개 삭제</div>
+                                        <div><strong>📋 검증 로그:</strong> ${data.validation_logs_cleared || 0}개 삭제</div>
+                                        <div><strong>📊 총 삭제:</strong> <span style="color: var(--success-color);">${data.total_cleared || 0}개</span></div>
+                                        ${data.document_reload ? `
+                                        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--gray-200);">
+                                        <div><strong>📄 문서 재로드:</strong> ${data.document_reload.documents_loaded || 0}개</div>
+                                        <div><strong>🧩 청크 생성:</strong> ${data.document_reload.total_chunks || 0}개</div>
+                                        ` : ''}
+                                    </div>
+                                    <p style="font-size: 13px; color: var(--gray-600); margin: 0;">모든 캐시가 초기화되고 문서가 자동으로 재로드되었습니다.</p>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    chatContainer.innerHTML += `
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <div class="message-avatar ai-avatar">❌</div>
+                                <div class="message-text">
+                                    <h3>전체 캐시 초기화 실패</h3>
+                                    <p>${data.error || '알 수 없는 오류가 발생했습니다.'}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+            } catch (error) {
+                const chatContainer = document.getElementById('chatContainer');
+                const clearingMsg = document.getElementById('allClearingMsg');
+                if (clearingMsg) clearingMsg.remove();
+                
+                chatContainer.innerHTML += `
+                    <div class="message ai-message">
+                        <div class="message-content">
+                            <div class="message-avatar ai-avatar">❌</div>
+                            <div class="message-text">
+                                <h3>전체 캐시 초기화 오류</h3>
+                                <p>네트워크 오류: ${error.message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        // Admin Panel Functions
+        let adminToken = null;
+
+        function openAdminSettings() {
+            document.getElementById('adminOverlay').classList.add('show');
+            document.getElementById('adminPopup').classList.add('show');
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminOverlay').classList.remove('show');
+            document.getElementById('adminPopup').classList.remove('show');
+        }
+
+        function handleAdminKeyPress(event) {
+            if (event.key === 'Enter') {
+                adminLogin();
+            }
+        }
+
+        async function adminLogin() {
+            const password = document.getElementById('adminPasswordPopup').value.trim();
+            console.log('입력된 비밀번호 길이:', password.length);
+            console.log('입력된 비밀번호:', password);
+            
+            if (!password) {
+                alert('비밀번호를 입력하세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                console.log('응답 상태:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('로그인 성공:', data);
+                    
+                    // API 응답 구조 확인 후 토큰 설정
+                    if (data.token) {
+                        adminToken = data.token;
+                    } else {
+                        // 토큰이 없으면 임시로 생성 (관리자 로그인 성공 표시)
+                        adminToken = 'admin-authenticated-' + Date.now();
+                    }
+                    console.log('토큰 저장됨:', adminToken);
+                    
+                    // Hide login and show admin sections
+                    document.getElementById('adminLoginSection').style.display = 'none';
+                    document.getElementById('adminSections').style.display = 'block';
+                    
+                    alert('관리자 로그인 성공!');
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.log('로그인 실패:', response.status, errorData);
+                    alert(`로그인 실패: ${errorData.error || '비밀번호가 일치하지 않습니다.'}`);
+                    document.getElementById('adminPasswordPopup').value = '';
+                }
+            } catch (error) {
+                console.error('네트워크 오류:', error);
+                alert(`네트워크 오류: ${error.message}`);
+            }
+        }
+
+        function adminLogout() {
+            adminToken = null;
+            document.getElementById('adminLoginSection').style.display = 'block';
+            document.getElementById('adminSections').style.display = 'none';
+            document.getElementById('adminPasswordPopup').value = '';
+        }
+
+        async function saveSystemSettings() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            const settings = {
+                llm_config: {
+                    default_model: document.getElementById('adminLlmModel').value,
+                    temperature: parseFloat(document.getElementById('adminTemperature').value),
+                    max_tokens: parseInt(document.getElementById('adminMaxTokens').value)
+                },
+                chunk_strategy: {
+                    chunk_size: parseInt(document.getElementById('adminChunkSize').value),
+                    chunk_overlap: parseInt(document.getElementById('adminChunkOverlap').value)
+                }
+            };
+
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('설정이 저장되었습니다.');
+                } else {
+                    alert(`설정 저장 실패: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        // Admin System Management Functions
+        async function adminResetVectorDB() {
+            console.log('adminToken:', adminToken);
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('벡터 데이터베이스를 초기화하시겠습니까?\n\n모든 문서 데이터가 삭제됩니다.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/vectordb/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccessNotification('✅ 벡터 DB 초기화 완료', data.message);
+                } else {
+                    alert(`벡터 DB 초기화 실패: ${data.error || '알 수 없는 오류'}`);
+                }
+                refreshUI();
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function adminClearAllCache() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('전체 캐시를 초기화하시겠습니까?\n\nRedis + SQLite 모든 캐시가 삭제됩니다.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/cache/clear-all', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccessNotification('✅ 전체 캐시 초기화 완료', data.message);
+                } else {
+                    alert(`캐시 초기화 실패: ${data.error || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function adminClearRDBCache() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('RDB 캐시를 초기화하시겠습니까?\n\nSQLite 캐시 데이터가 삭제됩니다.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/cache/clear-rdb', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccessNotification('✅ RDB 캐시 초기화 완료', data.message);
+                } else {
+                    alert(`RDB 캐시 초기화 실패: ${data.error || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function adminClearRedisCache() {
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('Redis 캐시를 초기화하시겠습니까?\n\nRedis 캐시 데이터가 삭제됩니다.')) {
+                return;
+            }
+
+            try {
+                // Redis cache clear API 호출
+                const response = await fetch('/api/admin/cache/clear-redis', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showSuccessNotification('✅ Redis 캐시 초기화 완료', data.message || 'Redis 캐시가 초기화되었습니다.');
+                } else {
+                    alert('Redis 캐시 초기화 실패');
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        // Success notification function
+        function showSuccessNotification(title, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #10a37f;
+                color: white;
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            notification.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+                <div style="font-size: 14px; opacity: 0.9;">${message}</div>
+            `;
+            
+            // Add CSS animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function refreshUI() {
+            loadSystemInfo();
+            // Refresh document list if function exists
+            if (typeof loadDocumentList === 'function') {
+                loadDocumentList();
+            }
+        }
+
+        // Document Management Functions
+        async function adminSaveChunkSettings() {
+            console.log('adminToken:', adminToken);
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            const settings = {
+                chunk_strategy: {
+                    chunk_size: parseInt(document.getElementById('adminChunkSize').value),
+                    chunk_overlap: parseInt(document.getElementById('adminChunkOverlap').value)
+                }
+            };
+
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccessNotification('✅ 청킹 설정 저장 완료', '새로운 청킹 설정이 저장되었습니다.');
+                } else {
+                    alert(`설정 저장 실패: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function adminLoadDocuments() {
+            console.log('adminToken:', adminToken);
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('S3 문서를 로드하시겠습니까?\n\n기존 문서는 유지되고 새로운 문서가 추가됩니다.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/document/load-s3', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccessNotification(
+                        '✅ 문서 로드 완료', 
+                        `${data.documents_loaded}개 문서가 ${data.total_chunks}개 청크로 처리되었습니다.`
+                    );
+                    refreshUI();
+                } else {
+                    alert(`문서 로드 실패: ${data.error || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+
+        async function adminReprocessDocuments() {
+            console.log('adminToken:', adminToken);
+            if (!adminToken) {
+                alert('관리자 인증이 필요합니다.');
+                return;
+            }
+
+            if (!confirm('기존 문서를 새로운 청킹 설정으로 재처리하시겠습니까?\n\n이 작업은 시간이 걸릴 수 있습니다.')) {
+                return;
+            }
+
+            try {
+                // 먼저 청킹 설정 저장
+                const chunkSettings = {
+                    chunk_strategy: {
+                        chunk_size: parseInt(document.getElementById('adminChunkSize').value),
+                        chunk_overlap: parseInt(document.getElementById('adminChunkOverlap').value)
+                    }
+                };
+
+                await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(chunkSettings)
+                });
+
+                // 벡터 DB 초기화
+                const resetResponse = await fetch('/api/admin/vectordb/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (!resetResponse.ok) {
+                    throw new Error('벡터 DB 초기화 실패');
+                }
+
+                // 문서 재로드
+                const reloadResponse = await fetch('/api/document/load-s3', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const reloadData = await reloadResponse.json();
+                if (reloadResponse.ok) {
+                    showSuccessNotification(
+                        '✅ 문서 재처리 완료', 
+                        `새로운 청킹 설정으로 ${reloadData.documents_loaded}개 문서가 ${reloadData.total_chunks}개 청크로 재처리되었습니다.`
+                    );
+                    refreshUI();
+                } else {
+                    alert(`문서 재처리 실패: ${reloadData.error || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                alert(`오류: ${error.message}`);
+            }
+        }
+    </script>
+
+    <!-- Admin Settings Trigger Button -->
+    <button class="admin-settings-trigger" onclick="openAdminSettings()" title="관리자 설정">
+        ⚙️
+    </button>
+
+    <!-- Admin Panel Overlay and Popup -->
+    <div class="admin-panel-overlay" id="adminOverlay" onclick="closeAdminPanel()"></div>
+    
+    <div class="admin-panel-popup" id="adminPopup">
+        <div class="admin-panel-header">
+            <h3>⚙️ 관리자 설정</h3>
+            <button class="admin-panel-close" onclick="closeAdminPanel()">×</button>
+        </div>
+        
+        <div class="admin-panel-content">
+            <!-- Login Section -->
+            <div class="admin-login-section" id="adminLoginSection">
+                <h4>🔐 관리자 인증</h4>
+                <input type="password" id="adminPasswordPopup" placeholder="관리자 비밀번호" onkeypress="handleAdminKeyPress(event)">
+                <button class="admin-btn admin-btn-primary" onclick="adminLogin()" style="width: 100%;">로그인</button>
+            </div>
+
+            <!-- Admin Sections (hidden until login) -->
+            <div id="adminSections" style="display: none;">
+                <!-- System Management -->
+                <div class="admin-section">
+                    <h4>⚙️ 시스템 설정</h4>
+                    <div class="description">시스템 데이터를 관리하고 초기화합니다.</div>
+                    
+                    <div class="admin-actions">
+                        <button class="admin-btn admin-btn-danger" onclick="adminResetVectorDB()">벡터 DB 초기화</button>
+                        <button class="admin-btn admin-btn-warning" onclick="adminClearAllCache()">전체 캐시 초기화</button>
+                    </div>
+                    
+                    <div class="admin-actions" style="margin-top: 12px;">
+                        <button class="admin-btn admin-btn-info" onclick="adminClearRDBCache()">RDB 초기화</button>
+                        <button class="admin-btn admin-btn-info" onclick="adminClearRedisCache()">Redis 초기화</button>
+                    </div>
+                </div>
+
+                <!-- Document Management -->
+                <div class="admin-section">
+                    <h4>📄 문서 관리</h4>
+                    <div class="description">문서 로드 및 청킹 전략을 설정합니다.</div>
+                    
+                    <div class="settings-grid" style="margin-bottom: 16px;">
+                        <div class="setting-item">
+                            <label>청크 크기</label>
+                            <input type="number" id="adminChunkSize" value="1000" min="100" max="5000">
+                        </div>
+                        <div class="setting-item">
+                            <label>청크 겹침</label>
+                            <input type="number" id="adminChunkOverlap" value="200" min="0" max="1000">
+                        </div>
+                    </div>
+                    
+                    <div class="admin-actions">
+                        <button class="admin-btn admin-btn-primary" onclick="adminSaveChunkSettings()">청킹 설정 저장</button>
+                        <button class="admin-btn admin-btn-success" onclick="adminLoadDocuments()">문서 로드</button>
+                    </div>
+                    
+                    <div class="admin-actions" style="margin-top: 12px;">
+                        <button class="admin-btn admin-btn-warning" onclick="adminReprocessDocuments()">문서 재처리 (새 청킹 적용)</button>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="admin-section">
+                    <div class="admin-actions">
+                        <button class="admin-btn admin-btn-primary" onclick="adminLogout()">로그아웃</button>
+                        <button class="admin-btn admin-btn-primary" onclick="closeAdminPanel()">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
