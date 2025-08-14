@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEOTIS RAG QA System - 통합 벤치마킹</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* 모델 선택 영역 */
+        .model-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .model-selector h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .model-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .model-option {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .model-option.selected {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+        
+        .model-option:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+        
+        /* 질문 입력 영역 */
+        .chat-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .query-input {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .query-input input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .query-input input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .query-input button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .query-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .query-input button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 시스템 정보 */
+        .system-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .info-card .label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-card .value {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        /* 로딩 스피너 */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 결과 표시 영역 */
+        .results-container {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .result-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border-left: 4px solid transparent;
+        }
+        
+        .result-panel.api {
+            border-left-color: #3498db;
+        }
+        
+        .result-panel.local {
+            border-left-color: #27ae60;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .api .panel-title {
+            color: #3498db;
+        }
+        
+        .local .panel-title {
+            color: #27ae60;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-ready {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* 메트릭 표시 */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .metric {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+        
+        .metric-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        /* 답변 내용 */
+        .answer-content {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            line-height: 1.6;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* 문서 가공 정보 */
+        .document-processing {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #e8f4f8;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .document-processing h4 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .chunk-info {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .source-docs {
+            font-size: 0.8rem;
+            color: #555;
+        }
+        
+        /* 비교 결과 */
+        .comparison-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        .comparison-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .winner-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            border-radius: 25px;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        
+        .similarity-indicator {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .similarity-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .similarity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+            transition: width 0.5s ease;
+        }
+        
+        /* 단일 모델 모드 */
+        .single-result {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        /* 에러 메시지 */
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid #dc3545;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .model-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 DEOTIS RAG QA System</h1>
+        <p>LLM 벤치마킹이 통합된 지능형 질의응답 시스템</p>
+    </div>
+    
+    <div class="container">
+        <!-- 모델 선택 영역 -->
+        <div class="model-selector">
+            <h3>🔧 LLM 모델 선택</h3>
+            <div class="model-options">
+                <div class="model-option" data-mode="single-api" onclick="selectModel('single-api')">
+                    <h4>📡 ChatGPT API</h4>
+                    <p>OpenAI GPT-3.5 Turbo<br>안정적이고 빠른 응답</p>
+                </div>
+                <div class="model-option" data-mode="single-local" onclick="selectModel('single-local')">
+                    <h4>🏠 로컬 LLM</h4>
+                    <p>LLaMA 3.2<br>개인정보 보호 우선</p>
+                </div>
+                <div class="model-option selected" data-mode="benchmark" onclick="selectModel('benchmark')">
+                    <h4>⚡ 벤치마킹 모드</h4>
+                    <p>두 모델 동시 비교<br>성능 및 품질 분석</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 질문 입력 영역 -->
+        <div class="chat-section">
+            <div class="query-input">
+                <input type="text" id="queryInput" placeholder="질문을 입력하세요... (예: 장기카드대출이란?)" />
+                <button onclick="submitQuery()" id="submitBtn">질문하기</button>
+            </div>
+            
+            <!-- 시스템 정보 -->
+            <div class="system-info">
+                <div class="info-card">
+                    <div class="label">청킹 설정</div>
+                    <div class="value" id="chunkInfo">1000자 / 200자 중첩</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">임베딩 모델</div>
+                    <div class="value" id="embeddingModel">OpenAI</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">벡터 DB</div>
+                    <div class="value" id="vectorDbInfo">ChromaDB</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">선택된 모드</div>
+                    <div class="value" id="selectedMode">벤치마킹 모드</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 로딩 스피너 -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem;" id="loadingText">답변을 생성하고 있습니다...</p>
+        </div>
+        
+        <!-- 벤치마킹 결과 (좌우 분할) -->
+        <div class="results-container" id="resultsContainer">
+            <!-- API LLM 결과 -->
+            <div class="result-panel api" id="apiPanel">
+                <div class="panel-header">
+                    <h3 class="panel-title">📡 ChatGPT API</h3>
+                    <span class="status-badge status-ready" id="apiStatus">준비</span>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">응답 시간</div>
+                        <div class="metric-value" id="apiResponseTime">-</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">토큰 수</div>
+                        <div class="metric-value" id="apiTokens">-</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">유사도</div>
+                        <div class="metric-value" id="apiSimilarity">-</div>
+                    </div>
+                </div>
+                <div class="answer-content" id="apiAnswer">
+                    답변이 여기에 표시됩니다...
+                </div>
+                <div class="document-processing">
+                    <h4>📄 문서 가공 정보</h4>
+                    <div class="chunk-info" id="apiChunkInfo">청킹: 1000자/200자 중첩</div>
+                    <div class="source-docs" id="apiSources">소스 문서를 확인하는 중...</div>
+                </div>
+            </div>
+            
+            <!-- Local LLM 결과 -->
+            <div class="result-panel local" id="localPanel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🏠 로컬 LLM</h3>
+                    <span class="status-badge status-ready" id="localStatus">준비</span>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">응답 시간</div>
+                        <div class="metric-value" id="localResponseTime">-</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">토큰 수</div>
+                        <div class="metric-value" id="localTokens">-</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">유사도</div>
+                        <div class="metric-value" id="localSimilarity">-</div>
+                    </div>
+                </div>
+                <div class="answer-content" id="localAnswer">
+                    답변이 여기에 표시됩니다...
+                </div>
+                <div class="document-processing">
+                    <h4>📄 문서 가공 정보</h4>
+                    <div class="chunk-info" id="localChunkInfo">청킹: 1000자/200자 중첩</div>
+                    <div class="source-docs" id="localSources">소스 문서를 확인하는 중...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 단일 모델 결과 -->
+        <div class="single-result" id="singleResult">
+            <div class="panel-header">
+                <h3 class="panel-title" id="singleTitle">답변 결과</h3>
+                <span class="status-badge status-ready" id="singleStatus">준비</span>
+            </div>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">응답 시간</div>
+                    <div class="metric-value" id="singleResponseTime">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">사용 모델</div>
+                    <div class="metric-value" id="singleModel">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">토큰 수</div>
+                    <div class="metric-value" id="singleTokens">-</div>
+                </div>
+            </div>
+            <div class="answer-content" id="singleAnswer">
+                답변이 여기에 표시됩니다...
+            </div>
+            <div class="document-processing">
+                <h4>📄 문서 가공 정보</h4>
+                <div class="chunk-info">청킹: 1000자/200자 중첩</div>
+                <div class="source-docs" id="singleSources">소스 문서를 확인하는 중...</div>
+            </div>
+        </div>
+        
+        <!-- 비교 결과 -->
+        <div class="comparison-section" id="comparisonSection">
+            <div class="comparison-header">
+                <h3>🏆 성능 비교 결과</h3>
+                <div class="winner-badge" id="winnerBadge">분석 중...</div>
+            </div>
+            <div class="similarity-indicator">
+                <p>답변 유사도: <strong id="similarityScore">분석 중...</strong></p>
+                <div class="similarity-bar">
+                    <div class="similarity-fill" id="similarityFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentMode = 'benchmark';
+        
+        // 모델 선택
+        function selectModel(mode) {
+            currentMode = mode;
+            
+            // UI 업데이트
+            document.querySelectorAll('.model-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('selected');
+            
+            // 모드 표시 업데이트
+            const modeNames = {
+                'single-api': 'ChatGPT API',
+                'single-local': '로컬 LLM',
+                'benchmark': '벤치마킹 모드'
+            };
+            document.getElementById('selectedMode').textContent = modeNames[mode];
+            
+            // 결과 영역 초기화
+            hideAllResults();
+        }
+        
+        // 모든 결과 영역 숨기기
+        function hideAllResults() {
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('singleResult').style.display = 'none';
+            document.getElementById('comparisonSection').style.display = 'none';
+        }
+        
+        // 질문 제출
+        async function submitQuery() {
+            const queryInput = document.getElementById('queryInput');
+            const query = queryInput.value.trim();
+            
+            if (!query) {
+                alert('질문을 입력해주세요.');
+                return;
+            }
+            
+            // UI 상태 변경
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('loadingSpinner').style.display = 'block';
+            hideAllResults();
+            
+            // 로딩 텍스트 업데이트
+            const loadingTexts = {
+                'single-api': 'ChatGPT API가 답변을 생성하고 있습니다...',
+                'single-local': '로컬 LLM이 답변을 생성하고 있습니다...',
+                'benchmark': '두 LLM이 동시에 답변을 생성하고 있습니다...'
+            };
+            document.getElementById('loadingText').textContent = loadingTexts[currentMode];
+            
+            try {
+                if (currentMode === 'benchmark') {
+                    await handleBenchmarkMode(query);
+                } else {
+                    await handleSingleMode(query, currentMode);
+                }
+                
+            } catch (error) {
+                displayError('서버 연결 오류: ' + error.message);
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+        
+        // 벤치마킹 모드 처리
+        async function handleBenchmarkMode(query) {
+            const response = await fetch('/api/benchmark/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query })
+            });
+            
+            const result = await response.json();
+            
+            if (result.type === 'benchmark') {
+                displayBenchmarkResults(result);
+            } else if (result.type === 'error') {
+                displayError(result.message);
+            }
+        }
+        
+        // 단일 모드 처리
+        async function handleSingleMode(query, mode) {
+            const endpoint = mode === 'single-api' ? '/api/rag/chat' : '/api/chat/local';
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    question: query,
+                    use_memory: false 
+                })
+            });
+            
+            const result = await response.json();
+            displaySingleResult(result, mode);
+        }
+        
+        // 벤치마킹 결과 표시
+        function displayBenchmarkResults(result) {
+            document.getElementById('resultsContainer').style.display = 'grid';
+            
+            // API 결과
+            if (result.api_result && result.api_result.success) {
+                document.getElementById('apiResponseTime').textContent = 
+                    `${result.api_result.response_time.toFixed(2)}초`;
+                document.getElementById('apiTokens').textContent = 
+                    result.api_result.estimated_tokens || '-';
+                document.getElementById('apiAnswer').textContent = 
+                    result.api_result.answer;
+                document.getElementById('apiSources').textContent = 
+                    `참조 문서: ${result.api_result.sources.join(', ')}`;
+                document.getElementById('apiSimilarity').textContent = 
+                    `${(result.avg_similarity * 100).toFixed(1)}%`;
+            } else {
+                document.getElementById('apiAnswer').innerHTML = 
+                    '<span style="color: #e74c3c;">API LLM 응답 실패</span>';
+            }
+            
+            // Local 결과
+            if (result.local_result && result.local_result.success) {
+                document.getElementById('localResponseTime').textContent = 
+                    `${result.local_result.response_time.toFixed(2)}초`;
+                document.getElementById('localTokens').textContent = 
+                    result.local_result.estimated_tokens || '-';
+                document.getElementById('localAnswer').textContent = 
+                    result.local_result.answer;
+                document.getElementById('localSources').textContent = 
+                    `참조 문서: ${result.local_result.sources.join(', ')}`;
+                document.getElementById('localSimilarity').textContent = 
+                    `${(result.avg_similarity * 100).toFixed(1)}%`;
+            } else {
+                document.getElementById('localAnswer').innerHTML = 
+                    '<span style="color: #e74c3c;">Local LLM 응답 실패</span>';
+            }
+            
+            // 비교 결과
+            if (result.comparison && result.comparison.both_succeeded) {
+                document.getElementById('comparisonSection').style.display = 'block';
+                
+                const faster = result.comparison.faster_model;
+                const winnerText = faster === 'api' ? 
+                    '📡 ChatGPT API가 더 빠름' : '🏠 로컬 LLM이 더 빠름';
+                document.getElementById('winnerBadge').textContent = winnerText;
+                
+                const similarity = result.comparison.similarity_score || 0;
+                document.getElementById('similarityScore').textContent = 
+                    `${(similarity * 100).toFixed(1)}%`;
+                document.getElementById('similarityFill').style.width = 
+                    `${similarity * 100}%`;
+            }
+        }
+        
+        // 단일 결과 표시
+        function displaySingleResult(result, mode) {
+            document.getElementById('singleResult').style.display = 'block';
+            
+            const modelNames = {
+                'single-api': '📡 ChatGPT API',
+                'single-local': '🏠 로컬 LLM'
+            };
+            
+            document.getElementById('singleTitle').textContent = modelNames[mode];
+            document.getElementById('singleAnswer').textContent = result.answer || '답변을 생성할 수 없습니다.';
+            document.getElementById('singleModel').textContent = result.model_used || mode;
+            
+            if (result.processing_time) {
+                document.getElementById('singleResponseTime').textContent = 
+                    `${result.processing_time.toFixed(2)}초`;
+            }
+            
+            if (result.similarity_search && result.similarity_search.length > 0) {
+                const sources = result.similarity_search.map(item => item.metadata?.source || 'Unknown');
+                document.getElementById('singleSources').textContent = 
+                    `참조 문서: ${sources.join(', ')}`;
+            }
+        }
+        
+        // 에러 표시
+        function displayError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.chat-section').appendChild(errorDiv);
+            
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+        
+        // Enter 키로 질문 제출
+        document.getElementById('queryInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitQuery();
+            }
+        });
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            // 시스템 정보 로드
+            loadSystemInfo();
+        });
+        
+        // 시스템 정보 로드
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch('/api/benchmark/system-info');
+                const data = await response.json();
+                
+                if (data.embedding_model) {
+                    document.getElementById('embeddingModel').textContent = data.embedding_model;
+                }
+                
+                // 벡터 DB 정보 로드
+                const vectorResponse = await fetch('/api/rag/vectordb/info');
+                const vectorData = await vectorResponse.json();
+                if (vectorData.total_documents) {
+                    document.getElementById('vectorDbInfo').textContent = 
+                        `${vectorData.total_documents}개 문서`;
+                }
+                
+            } catch (error) {
+                console.error('시스템 정보 로드 실패:', error);
+            }
+        }
+    </script>
+</body>
+</html>

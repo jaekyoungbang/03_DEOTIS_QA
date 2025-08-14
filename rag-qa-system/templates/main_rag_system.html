@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 DEOTIS RAG QA System - 통합 벤치마킹</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .admin-btn {
+            padding: 0.5rem 1rem;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .admin-btn:hover {
+            background: #c0392b;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* 벤치마킹 모드 선택 */
+        .benchmark-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .benchmark-selector h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #2c3e50;
+        }
+        
+        .benchmark-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .benchmark-card {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .benchmark-card:hover {
+            border-color: #3498db;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        .benchmark-card.selected {
+            border-color: #27ae60;
+            background: #f0f8f0;
+        }
+        
+        .benchmark-card .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .benchmark-card h3 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        
+        .benchmark-card p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .benchmark-card .specs {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        /* 채팅 인터페이스 */
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-header h3 {
+            margin: 0;
+        }
+        
+        .new-chat-btn {
+            padding: 0.5rem 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .message.user .message-avatar {
+            background: #3498db;
+            color: white;
+        }
+        
+        .message.bot .message-avatar {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .message-content {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 12px;
+            max-width: 80%;
+            position: relative;
+        }
+        
+        .message.user .message-content {
+            background: #3498db;
+            color: white;
+        }
+        
+        .message-meta {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .similarity-options {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .similarity-option {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .similarity-option:hover {
+            background: #f8f9fa;
+        }
+        
+        /* 채팅 입력 */
+        .chat-input-container {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .chat-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .summarize-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .chat-input input:focus {
+            border-color: #3498db;
+        }
+        
+        .send-btn {
+            padding: 0.75rem 1.5rem;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .send-btn:hover {
+            background: #219a52;
+        }
+        
+        .send-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        /* 벤치마킹 결과 */
+        .benchmark-results {
+            display: none;
+            margin-top: 2rem;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+        
+        .result-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border-left: 4px solid transparent;
+        }
+        
+        .result-panel.api {
+            border-left-color: #3498db;
+        }
+        
+        .result-panel.local {
+            border-left-color: #27ae60;
+        }
+        
+        .panel-header {
+            padding: 1rem 1.5rem;
+            background: rgba(0,0,0,0.05);
+            border-bottom: 1px solid #eee;
+        }
+        
+        .panel-title {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .api .panel-title {
+            color: #3498db;
+        }
+        
+        .local .panel-title {
+            color: #27ae60;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+        
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .panel-content {
+            padding: 1.5rem;
+        }
+        
+        .answer-content {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .source-info {
+            padding: 1rem;
+            background: #e8f4f8;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .source-info h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+        
+        .source-list {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        /* 관리자 패널 */
+        .admin-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+        }
+        
+        .admin-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .admin-actions {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .admin-action-btn {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s;
+        }
+        
+        .admin-action-btn:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+        
+        .admin-action-btn.danger:hover {
+            border-color: #e74c3c;
+            background: #ffebee;
+        }
+        
+        /* 로딩 상태 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .benchmark-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .chat-options {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🤖 DEOTIS RAG QA System</h1>
+            <button class="admin-btn" onclick="showAdminPanel()">
+                <i class="fas fa-cog"></i> 관리자
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- 벤치마킹 모드 선택 -->
+        <div class="benchmark-selector">
+            <h2>🎯 벤치마킹 모드 선택</h2>
+            <div class="benchmark-grid">
+                <div class="benchmark-card" data-mode="chatgpt-basic" onclick="selectBenchmark('chatgpt-basic')">
+                    <div class="icon">📡</div>
+                    <h3>ChatGPT + 기본 청킹</h3>
+                    <p>OpenAI GPT API를 사용하여 기본 청킹 전략(1000자/200자 중첩)으로 처리</p>
+                    <div class="specs">
+                        Model: GPT-3.5 Turbo | Chunk: 1000/200 | Type: API
+                    </div>
+                </div>
+                
+                <div class="benchmark-card" data-mode="chatgpt-custom" onclick="selectBenchmark('chatgpt-custom')">
+                    <div class="icon">🎨</div>
+                    <h3>ChatGPT + 커스텀 청킹</h3>
+                    <p>OpenAI GPT API를 사용하여 사용자 지정 구분자 기반 청킹으로 처리</p>
+                    <div class="specs">
+                        Model: GPT-3.5 Turbo | Chunk: Custom | Type: API
+                    </div>
+                </div>
+                
+                <div class="benchmark-card" data-mode="local-basic" onclick="selectBenchmark('local-basic')">
+                    <div class="icon">🏠</div>
+                    <h3>로컬 LLM + 기본 청킹</h3>
+                    <p>로컬 LLaMA 모델을 사용하여 기본 청킹 전략(1000자/200자 중첩)으로 처리</p>
+                    <div class="specs">
+                        Model: LLaMA 3.2 | Chunk: 1000/200 | Type: Local
+                    </div>
+                </div>
+                
+                <div class="benchmark-card" data-mode="local-custom" onclick="selectBenchmark('local-custom')">
+                    <div class="icon">🏗️</div>
+                    <h3>로컬 LLM + 커스텀 청킹</h3>
+                    <p>로컬 LLaMA 모델을 사용하여 사용자 지정 구분자 기반 청킹으로 처리</p>
+                    <div class="specs">
+                        Model: LLaMA 3.2 | Chunk: Custom | Type: Local
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 채팅 인터페이스 -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3 id="chatTitle">채팅을 시작하려면 벤치마킹 모드를 선택하세요</h3>
+                <button class="new-chat-btn" onclick="newChat()">
+                    <i class="fas fa-plus"></i> 새 채팅
+                </button>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div style="text-align: center; padding: 2rem; color: #666;">
+                    벤치마킹 모드를 선택한 후 질문을 시작하세요.
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="chat-options">
+                    <div class="summarize-option">
+                        <input type="checkbox" id="summarizeCheck">
+                        <label for="summarizeCheck">요약 정리</label>
+                    </div>
+                    <span style="color: #666; font-size: 0.9rem;">체크하면 LLM이 응답을 요약하여 제공합니다</span>
+                </div>
+                
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="질문을 입력하세요... (예: 장기카드대출이란?)" disabled>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 로딩 -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p id="loadingText">처리 중...</p>
+        </div>
+        
+        <!-- 벤치마킹 결과 -->
+        <div class="benchmark-results" id="benchmarkResults">
+            <div class="results-grid" id="resultsGrid">
+                <!-- 결과가 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 관리자 패널 -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-content">
+            <h3>🔧 관리자 패널</h3>
+            <p>시스템 초기화 및 관리 기능</p>
+            
+            <div class="admin-actions">
+                <button class="admin-action-btn" onclick="adminAction('clear-redis')">
+                    <h4>🗑️ Redis 캐시 삭제</h4>
+                    <p>단기 캐시 데이터를 모두 삭제합니다</p>
+                </button>
+                
+                <button class="admin-action-btn" onclick="adminAction('clear-rdb')">
+                    <h4>🗄️ RDB 기록 삭제</h4>
+                    <p>장기 기록 데이터를 모두 삭제합니다</p>
+                </button>
+                
+                <button class="admin-action-btn danger" onclick="adminAction('clear-vectordb')">
+                    <h4>⚠️ 벡터DB 삭제</h4>
+                    <p>임베딩된 벡터 데이터를 모두 삭제합니다</p>
+                </button>
+                
+                <button class="admin-action-btn danger" onclick="adminAction('clear-all')">
+                    <h4>💣 전체 초기화</h4>
+                    <p>Redis, RDB, 벡터DB를 모두 삭제합니다 (문서 파일 제외)</p>
+                </button>
+            </div>
+            
+            <div style="margin-top: 1rem; text-align: center;">
+                <button onclick="hideAdminPanel()" style="padding: 0.5rem 1rem; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentMode = null;
+        let chatHistory = [];
+        
+        // 벤치마킹 모드 선택
+        function selectBenchmark(mode) {
+            currentMode = mode;
+            
+            // UI 업데이트
+            document.querySelectorAll('.benchmark-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('selected');
+            
+            // 채팅 활성화
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            
+            // 타이틀 업데이트
+            const titles = {
+                'chatgpt-basic': '📡 ChatGPT + 기본 청킹',
+                'chatgpt-custom': '🎨 ChatGPT + 커스텀 청킹',
+                'local-basic': '🏠 로컬 LLM + 기본 청킹',
+                'local-custom': '🏗️ 로컬 LLM + 커스텀 청킹'
+            };
+            document.getElementById('chatTitle').textContent = titles[mode];
+            
+            // 새 채팅 시작
+            newChat();
+        }
+        
+        // 새 채팅
+        function newChat() {
+            chatHistory = [];
+            document.getElementById('chatMessages').innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #666;">
+                    새로운 채팅이 시작되었습니다. 질문을 입력하세요.
+                </div>
+            `;
+            document.getElementById('benchmarkResults').style.display = 'none';
+        }
+        
+        // 메시지 전송
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !currentMode) return;
+            
+            // 사용자 메시지 추가
+            addMessage('user', message);
+            input.value = '';
+            
+            // 로딩 시작
+            showLoading('답변을 생성하고 있습니다...');
+            
+            try {
+                const summarize = document.getElementById('summarizeCheck').checked;
+                
+                // API 호출
+                const response = await fetch('/api/benchmark/unified-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        mode: currentMode,
+                        summarize: summarize
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.type === 'similarity_choice') {
+                    // 유사도 0.8 미만인 경우 선택 옵션 제공
+                    showSimilarityOptions(result.options);
+                } else {
+                    // 일반 응답 처리
+                    handleResponse(result);
+                }
+                
+            } catch (error) {
+                addMessage('bot', `오류가 발생했습니다: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 메시지 추가
+        function addMessage(type, content, meta = null) {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = content;
+            
+            if (meta) {
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'message-meta';
+                metaDiv.textContent = meta;
+                contentDiv.appendChild(metaDiv);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // 유사도 선택 옵션 표시
+        function showSimilarityOptions(options) {
+            const optionsHtml = `
+                <h4>🎯 유사도 기반 답변 선택</h4>
+                <p>다음 중 원하시는 답변을 선택해주세요:</p>
+                ${options.map((option, index) => `
+                    <div class="similarity-option" onclick="selectSimilarity(${index})">
+                        <strong>답변 ${index + 1}</strong> (유사도: ${(option.similarity * 100).toFixed(1)}%)
+                        <br><small>${option.preview}...</small>
+                    </div>
+                `).join('')}
+            `;
+            
+            addMessage('bot', `<div class="similarity-options">${optionsHtml}</div>`);
+        }
+        
+        // 유사도 선택
+        async function selectSimilarity(index) {
+            showLoading('선택된 답변을 생성하고 있습니다...');
+            
+            try {
+                const response = await fetch('/api/benchmark/similarity-choice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        choice: index,
+                        mode: currentMode,
+                        summarize: document.getElementById('summarizeCheck').checked
+                    })
+                });
+                
+                const result = await response.json();
+                handleResponse(result);
+                
+            } catch (error) {
+                addMessage('bot', `오류가 발생했습니다: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 응답 처리
+        function handleResponse(result) {
+            if (result.type === 'single') {
+                // 단일 모드 응답
+                const meta = `응답 시간: ${result.response_time?.toFixed(2)}초 | 모델: ${result.model}`;
+                addMessage('bot', result.answer, meta);
+                
+            } else if (result.type === 'benchmark') {
+                // 벤치마킹 모드 응답
+                addMessage('bot', '벤치마킹 결과가 생성되었습니다. 아래에서 확인하세요.');
+                displayBenchmarkResults(result);
+            }
+        }
+        
+        // 벤치마킹 결과 표시
+        function displayBenchmarkResults(result) {
+            const resultsContainer = document.getElementById('benchmarkResults');
+            const resultsGrid = document.getElementById('resultsGrid');
+            
+            resultsGrid.innerHTML = '';
+            
+            // API 결과
+            if (result.api_result) {
+                resultsGrid.appendChild(createResultPanel('api', 'API LLM', result.api_result));
+            }
+            
+            // Local 결과
+            if (result.local_result) {
+                resultsGrid.appendChild(createResultPanel('local', 'Local LLM', result.local_result));
+            }
+            
+            resultsContainer.style.display = 'block';
+        }
+        
+        // 결과 패널 생성
+        function createResultPanel(type, title, data) {
+            const panel = document.createElement('div');
+            panel.className = `result-panel ${type}`;
+            
+            panel.innerHTML = `
+                <div class="panel-header">
+                    <h3 class="panel-title">${title}</h3>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric">
+                        <div class="metric-label">응답 시간</div>
+                        <div class="metric-value">${data.response_time?.toFixed(2) || '-'}초</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">토큰 수</div>
+                        <div class="metric-value">${data.estimated_tokens || '-'}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">점수</div>
+                        <div class="metric-value">${data.benchmark_score?.toFixed(1) || '-'}</div>
+                    </div>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="answer-content">${data.answer || '응답 없음'}</div>
+                    
+                    <div class="source-info">
+                        <h4>📄 참조 문서</h4>
+                        <div class="source-list">
+                            ${data.sources?.join(', ') || '소스 정보 없음'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return panel;
+        }
+        
+        // 로딩 표시/숨김
+        function showLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('sendBtn').disabled = true;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('sendBtn').disabled = false;
+        }
+        
+        // 관리자 패널
+        function showAdminPanel() {
+            document.getElementById('adminPanel').style.display = 'block';
+        }
+        
+        function hideAdminPanel() {
+            document.getElementById('adminPanel').style.display = 'none';
+        }
+        
+        // 관리자 액션
+        async function adminAction(action) {
+            if (!confirm('정말 실행하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/${action}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                alert(result.message || '작업이 완료되었습니다.');
+                
+            } catch (error) {
+                alert('오류가 발생했습니다: ' + error.message);
+            }
+        }
+        
+        // Enter 키 지원
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

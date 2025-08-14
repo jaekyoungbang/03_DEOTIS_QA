@@ -12,10 +12,10 @@ class SystemSettings:
         self.settings = {
             'chunk_size': Config.CHUNK_SIZE,
             'chunk_overlap': Config.CHUNK_OVERLAP,
-            'embedding_model': Config.EMBEDDING_MODEL,
-            'llm_model': Config.LLM_MODEL,
-            'llm_temperature': Config.LLM_TEMPERATURE,
-            'max_tokens': Config.MAX_TOKENS
+            'embedding_model': Config.CURRENT_EMBEDDING,
+            'llm_model': Config.LLM_MODELS['api']['model_name'],
+            'llm_temperature': Config.LLM_MODELS['api']['temperature'],
+            'max_tokens': Config.LLM_MODELS['api']['max_tokens']
         }
     
     def update_settings(self, new_settings):

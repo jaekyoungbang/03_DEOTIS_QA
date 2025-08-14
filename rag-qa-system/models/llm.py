@@ -4,11 +4,12 @@ from config import Config
 
 class LLMManager:
     def __init__(self, model_name=None):
-        self.model_name = model_name or Config.LLM_MODEL
+        # 기본 API 모델 사용
+        self.model_name = model_name or Config.LLM_MODELS['api']['model_name']
         self.llm = None
         self.available_models = {
             'gpt-4o-mini': 'gpt-4o-mini',
-            'gpt-4-turbo': 'gpt-4-turbo',  # GPT-4.1-mini equivalent
+            'gpt-4-turbo': 'gpt-4-turbo',
             'gpt-4': 'gpt-4',
             'gpt-3.5-turbo': 'gpt-3.5-turbo'
         }
@@ -28,8 +29,8 @@ class LLMManager:
                 self.llm = ChatOpenAI(
                     openai_api_key=Config.OPENAI_API_KEY,
                     model=actual_model,
-                    temperature=Config.LLM_TEMPERATURE,
-                    max_tokens=Config.MAX_TOKENS,
+                    temperature=Config.LLM_MODELS['api']['temperature'],
+                    max_tokens=Config.LLM_MODELS['api']['max_tokens'],
                     streaming=True
                 )
             except Exception as e:
@@ -38,8 +39,8 @@ class LLMManager:
                     self.llm = ChatOpenAI(
                         api_key=Config.OPENAI_API_KEY,
                         model_name=actual_model,
-                        temperature=Config.LLM_TEMPERATURE,
-                        max_tokens=Config.MAX_TOKENS,
+                        temperature=Config.LLM_MODELS['api']['temperature'],
+                        max_tokens=Config.LLM_MODELS['api']['max_tokens'],
                         streaming=True
                     )
                 except Exception as e2:
@@ -48,8 +49,8 @@ class LLMManager:
                     os.environ["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
                     self.llm = ChatOpenAI(
                         model=actual_model,
-                        temperature=Config.LLM_TEMPERATURE,
-                        max_tokens=Config.MAX_TOKENS
+                        temperature=Config.LLM_MODELS['api']['temperature'],
+                        max_tokens=Config.LLM_MODELS['api']['max_tokens']
                     )
         else:
             raise ValueError("No API key provided. Please set OPENAI_API_KEY in .env file")

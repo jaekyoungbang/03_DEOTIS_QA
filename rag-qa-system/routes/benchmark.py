@@ -17,7 +17,7 @@ def get_enhanced_rag_chain():
         enhanced_rag_chain = EnhancedRAGChain(vectorstore)
     return enhanced_rag_chain
 
-@benchmark_bp.route('/api/benchmark/query', methods=['POST'])
+@benchmark_bp.route('/query', methods=['POST'])
 def benchmark_query():
     """벤치마킹 모드로 질의 처리"""
     try:
@@ -40,7 +40,7 @@ def benchmark_query():
     except Exception as e:
         return jsonify({'error': f'처리 중 오류 발생: {str(e)}'}), 500
 
-@benchmark_bp.route('/api/benchmark/system-info', methods=['GET'])
+@benchmark_bp.route('/system-info', methods=['GET'])
 def get_system_info():
     """시스템 정보 반환"""
     try:
@@ -61,7 +61,7 @@ def get_system_info():
     except Exception as e:
         return jsonify({'error': f'시스템 정보 조회 오류: {str(e)}'}), 500
 
-@benchmark_bp.route('/api/benchmark/results', methods=['GET'])
+@benchmark_bp.route('/results', methods=['GET'])
 def get_benchmark_results():
     """저장된 벤치마킹 결과 조회"""
     try:
@@ -78,7 +78,7 @@ def get_benchmark_results():
     except Exception as e:
         return jsonify({'error': f'결과 조회 오류: {str(e)}'}), 500
 
-@benchmark_bp.route('/api/benchmark/clear-results', methods=['DELETE'])
+@benchmark_bp.route('/clear-results', methods=['DELETE'])
 def clear_benchmark_results():
     """벤치마킹 결과 초기화"""
     try:

@@ -8,6 +8,9 @@ from config import Config
 from routes.chat import chat_bp
 from routes.document import document_bp
 from routes.benchmark import benchmark_bp
+from routes.chat_local import chat_local_bp
+from routes.unified_benchmark import unified_bp
+from routes.admin_restored import admin_restored_bp
 from services.rag_chain import RAGChain
 
 app = Flask(__name__)
@@ -75,23 +78,27 @@ ns_document = api.namespace('document', description='문서 관리')
 app.register_blueprint(chat_bp, url_prefix='/api/chat')
 app.register_blueprint(document_bp, url_prefix='/api/document')
 app.register_blueprint(benchmark_bp, url_prefix='/api/benchmark')
+app.register_blueprint(chat_local_bp, url_prefix='/api/chat')
+app.register_blueprint(unified_bp, url_prefix='/api/benchmark')
+app.register_blueprint(admin_restored_bp, url_prefix='/api/admin')
 
 @app.route('/')
 def index():
-    # 자동 리다이렉션 페이지 표시
-    return render_template('unused_index.html')
+    # DEOTIS RAG로 자동 리다이렉션
+    return redirect(url_for('deotis_index'))
 
 @app.route('/deotisrag')
 def deotis_index():
+    """통합 DEOTIS RAG 페이지 (벤치마킹 포함)"""
     try:
-        return render_template('modern_index.html')
+        return render_template('main_rag_system.html')
     except Exception as e:
         return f'<h1>🚨 Template Loading Error</h1><p>Error: {str(e)}</p><p><a href="/">메인 페이지로 이동</a></p>'
 
 @app.route('/benchmark')
 def benchmark_page():
-    """벤치마킹 페이지"""
-    return render_template('benchmark.html')
+    """벤치마킹 전용 페이지 (리다이렉트)"""
+    return redirect(url_for('deotis_index'))
 
 @ns_rag.route('/chat')
 class RAGChat(Resource):

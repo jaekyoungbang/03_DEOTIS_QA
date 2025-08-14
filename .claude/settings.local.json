@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(curl:*)",
+      "Bash(sqlite3:*)",
+      "Bash(redis-server:*)",
+      "Bash(python:*)",
+      "Bash(pip3 list:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(rm:*)",
+      "Bash(pkill:*)",
+      "Bash(ss:*)",
+      "Bash(hostname:*)",
+      "Bash(ip route:*)",
+      "Bash(route:*)",
+      "Bash(grep:*)",
+      "Bash(kill:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}
