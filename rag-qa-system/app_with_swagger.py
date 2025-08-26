@@ -6,7 +6,7 @@ from config import Config
 from routes.chat import chat_bp
 from routes.document import document_bp
 from routes.api import api as api_namespace
-from routes.admin_api import api as admin_namespace
+# from routes.admin_api import api as admin_namespace
 from routes.settings import settings_bp
 
 app = Flask(__name__)
@@ -39,7 +39,7 @@ api = Api(
 
 # Add namespaces
 api.add_namespace(api_namespace, path='/rag')
-api.add_namespace(admin_namespace, path='/admin')
+# api.add_namespace(admin_namespace, path='/admin')
 
 # Register original blueprints (for backward compatibility)
 app.register_blueprint(chat_bp, url_prefix='/api/chat')

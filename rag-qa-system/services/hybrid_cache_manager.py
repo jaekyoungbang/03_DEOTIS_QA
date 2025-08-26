@@ -7,7 +7,7 @@ import os
 import threading
 import time
 from services.cache_manager import CacheManager as SQLiteCacheManager
-from services.redis_cache_manager import RedisCacheManager
+# from services.redis_cache_manager import RedisCacheManager
 
 class HybridCacheManager:
     """
@@ -21,23 +21,21 @@ class HybridCacheManager:
         self.popular_threshold = popular_threshold
         
         # Redis cache (temporary) - gracefully handle connection failures
-        try:
-            self.redis_cache = RedisCacheManager(ttl_hours=24)
-        except Exception as e:
-            print(f"⚠️ Redis initialization failed: {e}")
-            # Create a dummy cache manager to avoid errors
-            class DummyCache:
-                def __init__(self):
-                    self.connected = False
-                def get(self, *args, **kwargs):
-                    return None
-                def set(self, *args, **kwargs):
-                    return False
-                def clear_all(self):
-                    return 0
-                def get_stats(self):
-                    return {'connected': False, 'error': 'Redis not available'}
-            self.redis_cache = DummyCache()
+        # Redis disabled - using dummy cache
+        print(f"⚠️ Redis disabled - using SQLite only")
+        # Create a dummy cache manager to avoid errors
+        class DummyCache:
+            def __init__(self):
+                self.connected = False
+            def get(self, *args, **kwargs):
+                return None
+            def set(self, *args, **kwargs):
+                return False
+            def clear_all(self):
+                return 0
+            def get_stats(self):
+                return {'connected': False, 'error': 'Redis disabled'}
+        self.redis_cache = DummyCache()
         
         # SQLite cache for popular queries (permanent)
         self.popular_cache_db_path = 'data/cache/popular_cache.db'

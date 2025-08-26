@@ -1,7 +1,7 @@
 from services.cache_manager import CacheManager as SQLiteCacheManager
-from services.redis_cache_manager import RedisCacheManager  
+# from services.redis_cache_manager import RedisCacheManager  
 from services.hybrid_cache_manager import HybridCacheManager
-from services.admin_config import AdminConfig
+# from services.admin_config import AdminConfig
 
 class CacheFactory:
     """Factory to create appropriate cache manager based on configuration"""
@@ -22,8 +22,7 @@ class CacheFactory:
         """
         if cls._cache_manager is None or force_reload:
             # Always use hybrid cache system
-            config = AdminConfig()
-            cache_config = config.settings.get('cache_config', {})
+            cache_config = {}
             
             # Get popular threshold from config (default 5)
             popular_threshold = cache_config.get('popular_threshold', 5)
@@ -55,8 +54,8 @@ class CacheFactory:
         
         if isinstance(cls._cache_manager, HybridCacheManager):
             return 'hybrid'
-        elif isinstance(cls._cache_manager, RedisCacheManager):
-            return 'redis'
+        # elif isinstance(cls._cache_manager, RedisCacheManager):
+        #     return 'redis'
         else:
             return 'sqlite'
     

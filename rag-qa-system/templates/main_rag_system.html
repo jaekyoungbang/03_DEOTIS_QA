@@ -262,9 +262,9 @@
         
         .results-grid-realtime {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            max-width: 1600px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         
@@ -1065,7 +1065,7 @@
             }
             
             .results-grid-realtime {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
                 gap: 0.8rem;
             }
             
@@ -1098,7 +1098,7 @@
         /* 프로세스 카드 헤더 (가로 배열) */
         .process-cards-header {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
             padding: 1rem;
             background: #f8f9fa;
@@ -1268,6 +1268,10 @@
                 grid-template-columns: repeat(2, 1fr);
                 gap: 0.75rem;
             }
+            .process-cards-group {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
         }
         
         @media (max-width: 768px) {
@@ -1316,10 +1320,10 @@
             word-wrap: break-word;
         }
         
-        /* 4개 프로세스 카드 그룹 (가로 1줄) */
+        /* 2개 프로세스 카드 그룹 (가로 1줄) */
         .process-cards-group {
             display: grid !important;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
             margin-bottom: 1rem;
             opacity: 1 !important;
@@ -1482,10 +1486,8 @@
                 
                 <!-- 시스템 정보 -->
                 <div class="system-info">
-                    <h3>🎯 4가지 비교 분석</h3>
+                    <h3>🎯 2가지 비교 분석</h3>
                     <div class="info-badges">
-                        <span class="info-badge">📡 ChatGPT 기본</span>
-                        <span class="info-badge">🎨 ChatGPT 커스텀</span>
                         <span class="info-badge">🏠 로컬 기본</span>
                         <span class="info-badge">🏗️ 로컬 커스텀</span>
                     </div>
@@ -1510,12 +1512,10 @@
                 <div class="welcome-message">
                     <div style="text-align: center; padding: 2rem; color: #666; background: #f8f9fa; border-radius: 12px; margin: 1rem;">
                         <h3 style="margin-bottom: 1rem; color: #2c3e50;">💬 채팅 시작</h3>
-                        <p>질문을 입력하면 4개 프로세스에서 각각 답변을 제공합니다.</p>
+                        <p>질문을 입력하면 2개 프로세스에서 각각 답변을 제공합니다.</p>
                         <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
                             <span class="info-badge">🏠 사내서버 vLLM+기본</span>
                             <span class="info-badge">🔧 사내서버 vLLM+커스텀</span>
-                            <span class="info-badge">🤖 ChatGPT+기본</span>
-                            <span class="info-badge">🧠 ChatGPT+커스텀</span>
                         </div>
                     </div>
                 </div>
@@ -2509,8 +2509,6 @@
         // 프로세스 ID로 카드 인덱스 계산
         function getCardIndex(processId) {
             const indexMap = {
-                1: 2,  // ChatGPT + s3기본 → 카드 2
-                2: 3,  // ChatGPT + s3-chunking → 카드 3
                 3: 0,  // 사내서버 vLLM + s3기본 → 카드 0  
                 4: 1   // 사내서버 vLLM + s3-chunking → 카드 1
             };
@@ -2728,18 +2726,6 @@
         // 모드 설정 가져오기 (통합)
         function getModeConfig(mode) {
             const modeConfigs = {
-                'chatgpt-basic': { 
-                    title: 'ChatGPT + s3기본', 
-                    type: 'api',
-                    priority: 1,
-                    description: 's3폴더 문서 (1000자/200중첩)'
-                },
-                'chatgpt-custom': { 
-                    title: 'ChatGPT + s3-chunking', 
-                    type: 'api',
-                    priority: 2,
-                    description: 's3-chunking폴더 문서 (커스텀 지식향상)'
-                },
                 'local-basic': { 
                     title: '사내서버 vLLM + s3기본', 
                     type: 'local',
@@ -2802,12 +2788,10 @@
             processCardsGroup.id = `cards-group-${Date.now()}`; // 고유 ID
             
             const groupTimestamp = Date.now(); // 그룹별로 동일한 타임스탬프 사용
-            // 사용자 요청 순서: 🏠→🔧→🤖→🧠
+            // 사용자 요청 순서: 🏠→🔧
             const allProcesses = [
-                {key: 'local-basic', name: '사내서버 vLLM + s3기본', desc: '기본청킹전략(1000자/200중첩)', icon: '🏠', phase: 1, order: 1},
-                {key: 'local-custom', name: '사내서버 vLLM + s3-chunking', desc: '커스텀 청킹전략(향상된 지식)', icon: '🔧', phase: 2, order: 2},
-                {key: 'chatgpt-basic', name: 'ChatGPT + s3기본', desc: '기본청킹전략(1000자/200중첩)', icon: '🤖', phase: 1, order: 3},
-                {key: 'chatgpt-custom', name: 'ChatGPT + s3-chunking', desc: '커스텀 청킹전략(향상된 지식)', icon: '🧠', phase: 2, order: 4}
+                {key: 'local-basic', name: '사내서버 vLLM + s3기본', desc: '기본청킹전략(1500자/250중첩)', icon: '🏠', phase: 1, order: 1},
+                {key: 'local-custom', name: '사내서버 vLLM + s3-chunking', desc: '커스텀 청킹전략(향상된 지식)', icon: '🔧', phase: 2, order: 2}
             ];
             
             const phase1Processes = allProcesses.filter(p => p.phase === 1);
@@ -2982,12 +2966,10 @@
                 return;
             }
             
-            // 모드에 따른 카드 인덱스 결정 (새로운 순서: 🏠→🔧→🤖→🧠)
+            // 모드에 따른 카드 인덱스 결정 (새로운 순서: 🏠→🔧)
             const modeIndex = {
                 'local-basic': 0,     // 1번: 🏠 사내서버 vLLM + s3기본
-                'local-custom': 1,    // 2번: 🔧 사내서버 vLLM + s3-chunking
-                'chatgpt-basic': 2,   // 3번: 🤖 ChatGPT + s3기본
-                'chatgpt-custom': 3   // 4번: 🧠 ChatGPT + s3-chunking
+                'local-custom': 1     // 2번: 🔧 사내서버 vLLM + s3-chunking
             };
             
             const cardIndex = modeIndex[mode];
@@ -3078,10 +3060,8 @@
         function createLoadingCards() {
             const grid = document.getElementById('resultsGrid');
             const modes = [
-                { key: 'local-basic', title: '사내서버 vLLM + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🏠' },
-                { key: 'local-custom', title: '사내서버 vLLM + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🔧' },
-                { key: 'chatgpt-basic', title: 'ChatGPT API + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🤖' },
-                { key: 'chatgpt-custom', title: 'ChatGPT API + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🧠' }
+                { key: 'local-basic', title: '사내서버 vLLM + 기본청킹전략(1500자 나누기 250중첩)(s3 폴더)', icon: '🏠' },
+                { key: 'local-custom', title: '사내서버 vLLM + 커스텀 청킹전략(1500자 나누기 250중첩)(s3-chunking 폴더)', icon: '🔧' }
             ];
             
             modes.forEach((mode, index) => {
@@ -3107,12 +3087,10 @@
                 return;
             }
             
-            // 모드에 따른 카드 인덱스 결정 (새로운 순서: 🏠→🔧→🤖→🧠)
+            // 모드에 따른 카드 인덱스 결정 (새로운 순서: 🏠→🔧)
             const modeIndex = {
                 'local-basic': 0,     // 1번: 🏠 사내서버 vLLM + s3기본
-                'local-custom': 1,    // 2번: 🔧 사내서버 vLLM + s3-chunking
-                'chatgpt-basic': 2,   // 3번: 🤖 ChatGPT + s3기본
-                'chatgpt-custom': 3   // 4번: 🧠 ChatGPT + s3-chunking
+                'local-custom': 1     // 2번: 🔧 사내서버 vLLM + s3-chunking
             };
             
             const cardIndex = modeIndex[mode];
@@ -3302,10 +3280,8 @@
         function createLoadingCards() {
             const grid = document.getElementById('resultsGrid');
             const modes = [
-                { key: 'local-basic', title: '사내서버 vLLM + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🏠' },
-                { key: 'local-custom', title: '사내서버 vLLM + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🔧' },
-                { key: 'chatgpt-basic', title: 'ChatGPT API + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🤖' },
-                { key: 'chatgpt-custom', title: 'ChatGPT API + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🧠' }
+                { key: 'local-basic', title: '사내서버 vLLM + 기본청킹전략(1500자 나누기 250중첩)(s3 폴더)', icon: '🏠' },
+                { key: 'local-custom', title: '사내서버 vLLM + 커스텀 청킹전략(1500자 나누기 250중첩)(s3-chunking 폴더)', icon: '🔧' }
             ];
             
             modes.forEach((mode, index) => {

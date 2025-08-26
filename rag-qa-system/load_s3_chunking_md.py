@@ -24,8 +24,9 @@ from langchain.schema import Document
 class OptimizedMarkdownChunker:
     """최적화된 마크다운 청킹 클래스"""
     
-    def __init__(self, chunk_size_limit: int = 1500, preserve_images: bool = True):
+    def __init__(self, chunk_size_limit: int = 1500, chunk_overlap: int = 250, preserve_images: bool = True):
         self.chunk_size_limit = chunk_size_limit
+        self.chunk_overlap = chunk_overlap
         self.preserve_images = preserve_images
         self.image_pattern = re.compile(r'!\[.*?\]\((.*?)\)')
         
@@ -37,29 +38,9 @@ class OptimizedMarkdownChunker:
             
             filename = os.path.basename(file_path)
             sections = self._split_by_sections(content)
-            documents = []
             
-            for idx, section in enumerate(sections):
-                # 이미지 경로 추출
-                images = self._extract_images(section['content'])
-                
-                # Document 객체 생성
-                doc = Document(
-                    page_content=section['content'],
-                    metadata={
-                        'source': file_path,
-                        'filename': filename,
-                        'section': section['title'],
-                        'chunk_id': idx,
-                        'chunk_type': section['type'],
-                        'images': images,  # 이미지 경로 정보 추가
-                        'has_images': len(images) > 0,
-                        'folder_type': 's3-chunking',
-                        'file_type': 'markdown',
-                        'processing_strategy': 'optimized_md_chunking'
-                    }
-                )
-                documents.append(doc)
+            # 중첩 처리된 문서 생성
+            documents = self._create_overlapped_documents(sections, file_path, filename)
             
             return documents
             
@@ -77,6 +58,68 @@ class OptimizedMarkdownChunker:
                 'full_tag': match.group(0)
             })
         return images
+    
+    def _create_overlapped_documents(self, sections: List[Dict], file_path: str, filename: str) -> List[Document]:
+        """중첩 기능을 포함한 문서 생성"""
+        documents = []
+        
+        for idx, section in enumerate(sections):
+            # 현재 섹션의 기본 문서
+            current_content = section['content']
+            images = self._extract_images(current_content)
+            
+            # 기본 문서 생성
+            doc = Document(
+                page_content=current_content,
+                metadata={
+                    'source': file_path,
+                    'filename': filename,
+                    'section': section['title'],
+                    'chunk_id': idx,
+                    'chunk_type': section['type'],
+                    'images': images,
+                    'has_images': len(images) > 0,
+                    'folder_type': 's3-chunking',
+                    'file_type': 'markdown',
+                    'processing_strategy': 'optimized_md_chunking_with_overlap',
+                    'is_overlap': False
+                }
+            )
+            documents.append(doc)
+            
+            # 중첩 문서 생성 (다음 섹션과)
+            if idx < len(sections) - 1 and len(current_content) > self.chunk_overlap:
+                next_section = sections[idx + 1]
+                
+                # 현재 섹션의 마지막 부분 + 다음 섹션의 시작 부분
+                current_end = current_content[-self.chunk_overlap:]
+                next_start = next_section['content'][:self.chunk_overlap]
+                
+                # 섹션 헤더 보존
+                overlap_content = f"## {section['title']}\n...\n{current_end}\n\n## {next_section['title']}\n{next_start}"
+                
+                overlap_images = self._extract_images(overlap_content)
+                
+                overlap_doc = Document(
+                    page_content=overlap_content,
+                    metadata={
+                        'source': file_path,
+                        'filename': filename,
+                        'section': f"{section['title']} → {next_section['title']}",
+                        'chunk_id': f"{idx}_overlap_{idx+1}",
+                        'chunk_type': 'overlap',
+                        'images': overlap_images,
+                        'has_images': len(overlap_images) > 0,
+                        'folder_type': 's3-chunking',
+                        'file_type': 'markdown',
+                        'processing_strategy': 'optimized_md_chunking_with_overlap',
+                        'is_overlap': True,
+                        'overlap_sections': [section['title'], next_section['title']]
+                    }
+                )
+                documents.append(overlap_doc)
+        
+        return documents
     
     def _split_by_sections(self, content: str) -> List[Dict]:
         """마크다운을 섹션별로 분할"""
@@ -171,7 +214,8 @@ class S3ChunkingMDLoader:
     """s3-chunking 폴더의 MD 파일 전용 로더"""
     
     def __init__(self):
-        self.chunker = OptimizedMarkdownChunker()
+        # 중첩 기능을 포함한 청킹 설정: 1500자 제한, 250자 중첩
+        self.chunker = OptimizedMarkdownChunker(chunk_size_limit=1500, chunk_overlap=250)
         self.embedding_manager = EmbeddingManager()
         self.vectorstore_manager = DualVectorStoreManager(self.embedding_manager.get_embeddings())
         

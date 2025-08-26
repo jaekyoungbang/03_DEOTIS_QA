@@ -5,8 +5,9 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_restx import Api, Resource, fields
 from config import Config
-from routes.multi_benchmark import multi_benchmark_bp
-from routes.admin_restored import admin_restored_bp
+from routes.api import api_bp
+from routes.chat import chat_bp
+from routes.chat_local import chat_local_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -35,12 +36,13 @@ api = Api(
 )
 
 # API Namespaces
-ns_multi = api.namespace('multi', description='멀티 벤치마킹 시스템')
-ns_admin = api.namespace('admin', description='관리자 기능')
+ns_api = api.namespace('api', description='기본 API')
+ns_chat = api.namespace('chat', description='채팅 시스템')
 
 # Register blueprints - 핵심 기능만
-app.register_blueprint(multi_benchmark_bp, url_prefix='/api/multi')
-app.register_blueprint(admin_restored_bp, url_prefix='/api/admin')
+app.register_blueprint(api_bp, url_prefix='/api')
+app.register_blueprint(chat_bp, url_prefix='/api/chat')
+app.register_blueprint(chat_local_bp, url_prefix='/api/chat')
 
 @app.route('/')
 def index():

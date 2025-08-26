@@ -638,68 +638,6 @@
             <p style="margin-top: 1rem;" id="loadingText">답변을 생성하고 있습니다...</p>
         </div>
         
-        <!-- 벤치마킹 결과 (좌우 분할) -->
-        <div class="results-container" id="resultsContainer">
-            <!-- API LLM 결과 -->
-            <div class="result-panel api" id="apiPanel">
-                <div class="panel-header">
-                    <h3 class="panel-title">📡 ChatGPT API</h3>
-                    <span class="status-badge status-ready" id="apiStatus">준비</span>
-                </div>
-                <div class="metrics">
-                    <div class="metric">
-                        <div class="metric-label">응답 시간</div>
-                        <div class="metric-value" id="apiResponseTime">-</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">토큰 수</div>
-                        <div class="metric-value" id="apiTokens">-</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">유사도</div>
-                        <div class="metric-value" id="apiSimilarity">-</div>
-                    </div>
-                </div>
-                <div class="answer-content" id="apiAnswer">
-                    답변이 여기에 표시됩니다...
-                </div>
-                <div class="document-processing">
-                    <h4>📄 문서 가공 정보</h4>
-                    <div class="chunk-info" id="apiChunkInfo">청킹: 1000자/200자 중첩</div>
-                    <div class="source-docs" id="apiSources">소스 문서를 확인하는 중...</div>
-                </div>
-            </div>
-            
-            <!-- Local LLM 결과 -->
-            <div class="result-panel local" id="localPanel">
-                <div class="panel-header">
-                    <h3 class="panel-title">🏠 로컬 LLM</h3>
-                    <span class="status-badge status-ready" id="localStatus">준비</span>
-                </div>
-                <div class="metrics">
-                    <div class="metric">
-                        <div class="metric-label">응답 시간</div>
-                        <div class="metric-value" id="localResponseTime">-</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">토큰 수</div>
-                        <div class="metric-value" id="localTokens">-</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">유사도</div>
-                        <div class="metric-value" id="localSimilarity">-</div>
-                    </div>
-                </div>
-                <div class="answer-content" id="localAnswer">
-                    답변이 여기에 표시됩니다...
-                </div>
-                <div class="document-processing">
-                    <h4>📄 문서 가공 정보</h4>
-                    <div class="chunk-info" id="localChunkInfo">청킹: 1000자/200자 중첩</div>
-                    <div class="source-docs" id="localSources">소스 문서를 확인하는 중...</div>
-                </div>
-            </div>
-        </div>
         
         <!-- 단일 모델 결과 -->
         <div class="single-result" id="singleResult">
@@ -731,97 +669,7 @@
             </div>
         </div>
         
-        <!-- 비교 결과 -->
-        <div class="comparison-section" id="comparisonSection">
-            <div class="comparison-header">
-                <h3>🏆 성능 비교 결과</h3>
-                <div class="winner-badge" id="winnerBadge">분석 중...</div>
-            </div>
-            <div class="similarity-indicator">
-                <p>답변 유사도: <strong id="similarityScore">분석 중...</strong></p>
-                <div class="similarity-bar">
-                    <div class="similarity-fill" id="similarityFill" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
         
-        <!-- 4방향 멀티 벤치마킹 결과 -->
-        <div class="multi-benchmark-container" id="multiBenchmarkContainer" style="display: none;">
-            <!-- Phase 정보 -->
-            <div class="phases-info">
-                <div class="phase-info phase-1">
-                    <h4>🚀 Phase 1: 기본 방법들 (동시 실행)</h4>
-                    <div class="phase-methods">
-                        <span class="method-badge">🏠 로컬LLM + s3기본</span>
-                        <span class="method-badge">🤖 ChatGPT + s3기본</span>
-                    </div>
-                    <div class="phase-duration" id="phase1Duration">소요 시간: -</div>
-                </div>
-                <div class="phase-info phase-2">
-                    <h4>⏳ Phase 2: 청킹 방법들 (Phase 1 완료 후 실행)</h4>
-                    <div class="phase-methods">
-                        <span class="method-badge">🔧 로컬LLM + s3-chunking</span>
-                        <span class="method-badge">🧠 ChatGPT + s3-chunking</span>
-                    </div>
-                    <div class="phase-duration" id="phase2Duration">소요 시간: -</div>
-                    <div class="waiting-status" id="phase2WaitingStatus">이전 작업 종료 대기중...</div>
-                </div>
-            </div>
-            
-            <!-- 4개 결과 그리드 -->
-            <div class="four-results-grid">
-                <div class="result-card" id="result-chatgpt-basic">
-                    <div class="card-header">🤖 ChatGPT + s3기본</div>
-                    <div class="timer" id="timer-chatgpt-basic">⏱️ -</div>
-                    <div class="status-indicator waiting" id="status-chatgpt-basic">대기중</div>
-                    <div class="result-content" id="content-chatgpt-basic">-</div>
-                </div>
-                
-                <div class="result-card" id="result-local-basic">
-                    <div class="card-header">🏠 로컬LLM + s3기본</div>
-                    <div class="timer" id="timer-local-basic">⏱️ -</div>
-                    <div class="status-indicator waiting" id="status-local-basic">대기중</div>
-                    <div class="result-content" id="content-local-basic">-</div>
-                </div>
-                
-                <div class="result-card phase-2-card" id="result-chatgpt-custom">
-                    <div class="card-header">🧠 ChatGPT + s3-chunking</div>
-                    <div class="timer" id="timer-chatgpt-custom">⏱️ -</div>
-                    <div class="status-indicator waiting" id="status-chatgpt-custom">이전 작업 종료 대기중...</div>
-                    <div class="result-content" id="content-chatgpt-custom">-</div>
-                </div>
-                
-                <div class="result-card phase-2-card" id="result-local-custom">
-                    <div class="card-header">🔧 로컬LLM + s3-chunking</div>
-                    <div class="timer" id="timer-local-custom">⏱️ -</div>
-                    <div class="status-indicator waiting" id="status-local-custom">이전 작업 종료 대기중...</div>
-                    <div class="result-content" id="content-local-custom">-</div>
-                </div>
-            </div>
-            
-            <!-- 전체 통계 -->
-            <div class="overall-stats" id="overallStats">
-                <h4>📊 전체 실행 통계</h4>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">총 소요 시간</span>
-                        <span class="stat-value" id="totalExecutionTime">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">성공한 방법</span>
-                        <span class="stat-value" id="successfulMethods">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Phase 1 시간</span>
-                        <span class="stat-value" id="phase1Time">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Phase 2 시간</span>
-                        <span class="stat-value" id="phase2Time">-</span>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
     
     <script>
@@ -886,43 +734,6 @@
             }
         }
         
-        // 벤치마킹 모드 처리
-        async function handleBenchmarkMode(query) {
-            const response = await fetch('/api/benchmark/query', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ query })
-            });
-            
-            const result = await response.json();
-            
-            if (result.type === 'benchmark') {
-                displayBenchmarkResults(result);
-            } else if (result.type === 'error') {
-                displayError(result.message);
-            }
-        }
-        
-        // 4방향 멀티 벤치마킹 모드 처리
-        async function handleMultiBenchmarkMode(query) {
-            const response = await fetch('/api/multi/multi-query', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ query })
-            });
-            
-            const result = await response.json();
-            
-            if (result.type === 'multi_benchmark_sequential') {
-                displayMultiBenchmarkResults(result);
-            } else if (result.type === 'error') {
-                displayError(result.error || result.message);
-            }
-        }
         
         // 단일 모드 처리
         async function handleSingleMode(query, mode) {
@@ -956,60 +767,6 @@
             displaySingleResult(result, mode);
         }
         
-        // 벤치마킹 결과 표시
-        function displayBenchmarkResults(result) {
-            document.getElementById('resultsContainer').style.display = 'grid';
-            
-            // API 결과
-            if (result.api_result && result.api_result.success) {
-                document.getElementById('apiResponseTime').textContent = 
-                    `${result.api_result.response_time.toFixed(2)}초`;
-                document.getElementById('apiTokens').textContent = 
-                    result.api_result.estimated_tokens || '-';
-                document.getElementById('apiAnswer').textContent = 
-                    result.api_result.answer;
-                document.getElementById('apiSources').textContent = 
-                    `참조 문서: ${result.api_result.sources.join(', ')}`;
-                document.getElementById('apiSimilarity').textContent = 
-                    `${(result.avg_similarity * 100).toFixed(1)}%`;
-            } else {
-                document.getElementById('apiAnswer').innerHTML = 
-                    '<span style="color: #e74c3c;">API LLM 응답 실패</span>';
-            }
-            
-            // Local 결과
-            if (result.local_result && result.local_result.success) {
-                document.getElementById('localResponseTime').textContent = 
-                    `${result.local_result.response_time.toFixed(2)}초`;
-                document.getElementById('localTokens').textContent = 
-                    result.local_result.estimated_tokens || '-';
-                document.getElementById('localAnswer').textContent = 
-                    result.local_result.answer;
-                document.getElementById('localSources').textContent = 
-                    `참조 문서: ${result.local_result.sources.join(', ')}`;
-                document.getElementById('localSimilarity').textContent = 
-                    `${(result.avg_similarity * 100).toFixed(1)}%`;
-            } else {
-                document.getElementById('localAnswer').innerHTML = 
-                    '<span style="color: #e74c3c;">Local LLM 응답 실패</span>';
-            }
-            
-            // 비교 결과
-            if (result.comparison && result.comparison.both_succeeded) {
-                document.getElementById('comparisonSection').style.display = 'block';
-                
-                const faster = result.comparison.faster_model;
-                const winnerText = faster === 'api' ? 
-                    '📡 ChatGPT API가 더 빠름' : '🏠 로컬 LLM이 더 빠름';
-                document.getElementById('winnerBadge').textContent = winnerText;
-                
-                const similarity = result.comparison.similarity_score || 0;
-                document.getElementById('similarityScore').textContent = 
-                    `${(similarity * 100).toFixed(1)}%`;
-                document.getElementById('similarityFill').style.width = 
-                    `${similarity * 100}%`;
-            }
-        }
         
         // 단일 결과 표시
         function displaySingleResult(result, mode) {
@@ -1036,88 +793,6 @@
             }
         }
         
-        // 4방향 멀티 벤치마킹 결과 표시
-        function displayMultiBenchmarkResults(result) {
-            document.getElementById('multiBenchmarkContainer').style.display = 'block';
-            
-            // Phase 정보 업데이트
-            if (result.execution_phases) {
-                if (result.execution_phases.phase1) {
-                    document.getElementById('phase1Duration').textContent = 
-                        `소요 시간: ${result.execution_phases.phase1.duration.toFixed(2)}초`;
-                }
-                if (result.execution_phases.phase2) {
-                    document.getElementById('phase2Duration').textContent = 
-                        `소요 시간: ${result.execution_phases.phase2.duration.toFixed(2)}초`;
-                    // Phase 2 완료 시 대기 상태 제거
-                    document.getElementById('phase2WaitingStatus').style.display = 'none';
-                }
-            }
-            
-            // 각 방법별 결과 표시
-            const methodMapping = {
-                'chatgpt-basic': { id: 'chatgpt-basic', emoji: '🤖', name: 'ChatGPT + s3기본' },
-                'local-basic': { id: 'local-basic', emoji: '🏠', name: '로컬LLM + s3기본' },
-                'chatgpt-custom': { id: 'chatgpt-custom', emoji: '🧠', name: 'ChatGPT + s3-chunking' },
-                'local-custom': { id: 'local-custom', emoji: '🔧', name: '로컬LLM + s3-chunking' }
-            };
-            
-            result.results.forEach(methodResult => {
-                const methodInfo = methodMapping[methodResult.mode];
-                if (!methodInfo) return;
-                
-                const statusId = `status-${methodInfo.id}`;
-                const timerId = `timer-${methodInfo.id}`;
-                const contentId = `content-${methodInfo.id}`;
-                
-                // 타이머 업데이트
-                const responseTime = methodResult.result.response_time || methodResult.processing_time || 0;
-                document.getElementById(timerId).textContent = `⏱️ ${responseTime.toFixed(2)}초`;
-                
-                // 상태 업데이트
-                const statusElement = document.getElementById(statusId);
-                if (methodResult.success && methodResult.result.success) {
-                    statusElement.textContent = '완료';
-                    statusElement.className = 'status-indicator completed';
-                } else {
-                    statusElement.textContent = '오류';
-                    statusElement.className = 'status-indicator error';
-                }
-                
-                // 내용 업데이트
-                const contentElement = document.getElementById(contentId);
-                if (methodResult.result.answer) {
-                    // 답변을 적절한 길이로 자르기
-                    let answer = methodResult.result.answer;
-                    if (answer.length > 200) {
-                        answer = answer.substring(0, 200) + '...';
-                    }
-                    contentElement.textContent = answer;
-                } else {
-                    contentElement.innerHTML = '<span style="color: #e74c3c;">답변 생성 실패</span>';
-                }
-                
-                // Phase 2 카드들의 opacity 정상화
-                if (methodInfo.id.includes('custom')) {
-                    const cardElement = document.getElementById(`result-${methodInfo.id}`);
-                    if (cardElement) {
-                        cardElement.style.opacity = '1';
-                    }
-                }
-            });
-            
-            // 전체 통계 업데이트
-            if (result.summary) {
-                document.getElementById('totalExecutionTime').textContent = 
-                    `${result.summary.total_execution_time.toFixed(2)}초`;
-                document.getElementById('successfulMethods').textContent = 
-                    `${result.summary.successful_modes}/${result.summary.total_modes}`;
-                document.getElementById('phase1Time').textContent = 
-                    `${result.summary.phase1_time.toFixed(2)}초`;
-                document.getElementById('phase2Time').textContent = 
-                    `${result.summary.phase2_time.toFixed(2)}초`;
-            }
-        }
         
         // 에러 표시
         function displayError(message) {
@@ -1145,20 +820,10 @@
         // 시스템 정보 로드
         async function loadSystemInfo() {
             try {
-                const response = await fetch('/api/benchmark/system-info');
-                const data = await response.json();
-                
-                if (data.embedding_model) {
-                    document.getElementById('embeddingModel').textContent = data.embedding_model;
-                }
-                
-                // 벡터 DB 정보 로드
-                const vectorResponse = await fetch('/api/rag/vectordb/info');
-                const vectorData = await vectorResponse.json();
-                if (vectorData.total_documents) {
-                    document.getElementById('vectorDbInfo').textContent = 
-                        `${vectorData.total_documents}개 문서`;
-                }
+                // 기본 시스템 정보 표시
+                document.getElementById('embeddingModel').textContent = 'ko-sroberta-multitask';
+                document.getElementById('vectorDbInfo').textContent = 'ChromaDB';
+                document.getElementById('chunkInfo').textContent = '1500자 / 250자 중첩';
                 
             } catch (error) {
                 console.error('시스템 정보 로드 실패:', error);

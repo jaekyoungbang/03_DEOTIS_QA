@@ -7,8 +7,8 @@ from models.vectorstore import VectorStoreManager
 from models.dual_vectorstore import DualVectorStoreManager, get_dual_vectorstore
 from utils.error_handler import detect_error_type, format_error_response
 from services.cache_factory import CacheFactory
-from services.query_analyzer import QueryAnalyzer
-from services.reranker import SearchReranker
+# from services.query_analyzer import QueryAnalyzer
+# from services.reranker import SearchReranker
 import time
 import sqlite3
 import os
@@ -33,8 +33,8 @@ class RAGChain:
         )
         self.qa_chain = None
         self.cache_manager = CacheFactory.get_cache_manager()  # Use cache factory
-        self.query_analyzer = QueryAnalyzer()  # 질문 분석기
-        self.reranker = SearchReranker()  # 재순위 시스템
+        # self.query_analyzer = QueryAnalyzer()  # 질문 분석기
+        # self.reranker = SearchReranker()  # 재순위 시스템
         self.stats_db_path = "./data/search_stats.db"
         self.initialize_stats_db()
         self.initialize_chain()
