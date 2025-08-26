@@ -593,21 +593,13 @@
         <div class="model-selector">
             <h3>🔧 LLM 모델 선택</h3>
             <div class="model-options">
-                <div class="model-option" data-mode="single-api" onclick="selectModel('single-api')">
-                    <h4>📡 ChatGPT API</h4>
-                    <p>OpenAI GPT-3.5 Turbo<br>안정적이고 빠른 응답</p>
+                <div class="model-option selected" data-mode="single-local" onclick="selectModel('single-local')">
+                    <h4>🏠 사내서버 vLLM + s3기본</h4>
+                    <p>로컬 LLaMA 모델<br>기본 문서 청킹 방식</p>
                 </div>
-                <div class="model-option" data-mode="single-local" onclick="selectModel('single-local')">
-                    <h4>🏠 로컬 LLM</h4>
-                    <p>LLaMA 3.2<br>개인정보 보호 우선</p>
-                </div>
-                <div class="model-option" data-mode="benchmark" onclick="selectModel('benchmark')">
-                    <h4>⚡ 벤치마킹 모드</h4>
-                    <p>두 모델 동시 비교<br>성능 및 품질 분석</p>
-                </div>
-                <div class="model-option selected" data-mode="multi-benchmark" onclick="selectModel('multi-benchmark')">
-                    <h4>🚀 4방향 벤치마킹</h4>
-                    <p>4가지 방법 순차 비교<br>🏠+s3기본 → 🤖+s3기본 → 🔧+s3청킹 → 🧠+s3청킹</p>
+                <div class="model-option" data-mode="single-custom" onclick="selectModel('single-custom')">
+                    <h4>🔧 사내서버 vLLM + s3-chunking</h4>
+                    <p>로컬 LLaMA 모델<br>최적화된 청킹 방식</p>
                 </div>
             </div>
         </div>
@@ -635,7 +627,7 @@
                 </div>
                 <div class="info-card">
                     <div class="label">선택된 모드</div>
-                    <div class="value" id="selectedMode">벤치마킹 모드</div>
+                    <div class="value" id="selectedMode">사내서버 vLLM + s3기본</div>
                 </div>
             </div>
         </div>
@@ -833,7 +825,7 @@
     </div>
     
     <script>
-        let currentMode = 'multi-benchmark';
+        let currentMode = 'single-local';
         
         // 모델 선택
         function selectModel(mode) {
@@ -847,10 +839,8 @@
             
             // 모드 표시 업데이트
             const modeNames = {
-                'single-api': 'ChatGPT API',
-                'single-local': '로컬 LLM',
-                'benchmark': '벤치마킹 모드',
-                'multi-benchmark': '4방향 벤치마킹'
+                'single-local': '사내서버 vLLM + s3기본',
+                'single-custom': '사내서버 vLLM + s3-chunking'
             };
             document.getElementById('selectedMode').textContent = modeNames[mode];
             
@@ -860,10 +850,7 @@
         
         // 모든 결과 영역 숨기기
         function hideAllResults() {
-            document.getElementById('resultsContainer').style.display = 'none';
             document.getElementById('singleResult').style.display = 'none';
-            document.getElementById('comparisonSection').style.display = 'none';
-            document.getElementById('multiBenchmarkContainer').style.display = 'none';
         }
         
         // 질문 제출
@@ -883,21 +870,13 @@
             
             // 로딩 텍스트 업데이트
             const loadingTexts = {
-                'single-api': 'ChatGPT API가 답변을 생성하고 있습니다...',
-                'single-local': '로컬 LLM이 답변을 생성하고 있습니다...',
-                'benchmark': '두 LLM이 동시에 답변을 생성하고 있습니다...',
-                'multi-benchmark': 'Phase 1: 🏠로컬LLM+s3기본, 🤖ChatGPT+s3기본 실행 중...'
+                'single-local': '🏠 사내서버 vLLM + s3기본이 답변을 생성하고 있습니다...',
+                'single-custom': '🔧 사내서버 vLLM + s3-chunking이 답변을 생성하고 있습니다...'
             };
             document.getElementById('loadingText').textContent = loadingTexts[currentMode];
             
             try {
-                if (currentMode === 'benchmark') {
-                    await handleBenchmarkMode(query);
-                } else if (currentMode === 'multi-benchmark') {
-                    await handleMultiBenchmarkMode(query);
-                } else {
-                    await handleSingleMode(query, currentMode);
-                }
+                await handleSingleMode(query, currentMode);
                 
             } catch (error) {
                 displayError('서버 연결 오류: ' + error.message);
@@ -947,17 +926,30 @@
         
         // 단일 모드 처리
         async function handleSingleMode(query, mode) {
-            const endpoint = mode === 'single-api' ? '/api/rag/chat' : '/api/chat/local';
+            let endpoint, requestBody;
+            
+            if (mode === 'single-local') {
+                // s3기본 방식
+                endpoint = '/api/chat/local';
+                requestBody = { 
+                    question: query,
+                    use_memory: false 
+                };
+            } else if (mode === 'single-custom') {
+                // s3-chunking 방식
+                endpoint = '/api/chat/custom';
+                requestBody = { 
+                    question: query,
+                    use_s3_chunking: true 
+                };
+            }
             
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    question: query,
-                    use_memory: false 
-                })
+                body: JSON.stringify(requestBody)
             });
             
             const result = await response.json();
@@ -1024,8 +1016,8 @@
             document.getElementById('singleResult').style.display = 'block';
             
             const modelNames = {
-                'single-api': '📡 ChatGPT API',
-                'single-local': '🏠 로컬 LLM'
+                'single-local': '🏠 사내서버 vLLM + s3기본',
+                'single-custom': '🔧 사내서버 vLLM + s3-chunking'
             };
             
             document.getElementById('singleTitle').textContent = modelNames[mode];
