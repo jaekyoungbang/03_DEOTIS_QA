@@ -1,0 +1,1 @@
+curl -X POST http://192.168.0.224:8412/v1/chat/completions -H "Content-Type: application/json" -d "{\"model\": \"./models/kanana8b\", \"messages\": [{\"role\": \"user\", \"content\": \"안녕!\"}], \"max_tokens\": 50, \"chat_template_kwargs\": {\"enable_thinking\": false}}"

@@ -1878,8 +1878,20 @@
             
             console.log('🔧 formatText input:', text.substring(0, 200) + '...');
             
-            // 먼저 줄바꿈 정규화
-            let formatted = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            // 먼저 <think> 태그와 내용 제거 (닫는 태그가 있는 경우)
+            let formatted = text.replace(/<think>[\s\S]*?<\/think>/g, '');
+            
+            // <think>로 시작하는 부분이 남아있으면 끝까지 제거 (닫는 태그가 없는 경우 대비)
+            formatted = formatted.replace(/<think>[\s\S]*$/g, '');
+            
+            // **답변:** 형태로 시작하는 한국어 답변 추출
+            const answerMatch = formatted.match(/\*\*답변:\*\*[\s\S]*$/);
+            if (answerMatch) {
+                formatted = answerMatch[0];
+            }
+            
+            // 줄바꿈 정규화
+            formatted = formatted.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             
             // 1. 마크다운 테이블 검출 및 변환 (개선된 버전)
             // 더 정확한 마크다운 테이블 검출: 연속된 | 라인들을 하나의 테이블로 인식
@@ -2467,7 +2479,7 @@
                 // ChatGPT 프로세스만 정상 처리
                 const result = {
                     success: event.status === 'success',
-                    answer: event.rank_answers && event.rank_answers[0] ? event.rank_answers[0].answer : '답변 없음',
+                    answer: event.answer || (event.rank_answers && event.rank_answers[0] ? event.rank_answers[0].answer : '답변 없음'),
                     similarity_info: event.similarity_info || [],
                     total_time: event.total_time || 0,
                     process_name: event.process_name,
@@ -2579,7 +2591,7 @@
                     local_model: document.getElementById('localModelSelect').value
                 });
                 
-                const response = await fetch('/api/multi/multi-query-stream', {
+                const response = await fetch('/api/chat/vllm-dual-stream', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2604,8 +2616,13 @@
                     
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
+                            const dataStr = line.slice(6);
+                            if (dataStr === '[DONE]') {
+                                console.log('📡 스트리밍 완료 신호 받음');
+                                continue;
+                            }
                             try {
-                                const data = JSON.parse(line.slice(6));
+                                const data = JSON.parse(dataStr);
                                 handleStreamEvent(data);
                             } catch (e) {
                                 console.error('Stream parsing error:', e);
@@ -2628,6 +2645,21 @@
                     console.log(`🎯 Phase ${data.phase}:`, data.modes);
                     break;
                     
+                case 'process_complete':
+                    console.log(`📊 Process ${data.process_id} (${data.process_name}) 완료`);
+                    const mode = getProcessMode(data.process_id);
+                    const result = {
+                        success: data.status === 'success',
+                        answer: data.answer || '답변 없음',
+                        similarity_info: data.similarity_info || [],
+                        total_time: data.total_time || 0,
+                        process_name: data.process_name,
+                        chunking_type: data.chunking_type
+                    };
+                    console.log('📋 Calling displayResult with:', result, mode);
+                    displayResult(result, mode, getCardIndex(data.process_id));
+                    break;
+                    
                 case 'result':
                     console.log(`📊 ${data.mode} 완료`);
                     const cardIndex = getCardIndexByMode(data.mode);
@@ -2635,6 +2667,7 @@
                     break;
                     
                 case 'complete':
+                case 'all_complete':
                     console.log('🎉 모든 모드 완료');
                     setTimeout(() => {
                         const input = document.getElementById('messageInput');
@@ -2666,7 +2699,7 @@
                 console.log(`\ud83d\ude80 Executing all modes with query: "${query}"`);
                 
                 // 스트리밍 API 호출로 변경
-                const response = await fetch('/api/multi/multi-query-stream', {
+                const response = await fetch('/api/chat/vllm-dual-stream', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3463,7 +3496,7 @@
         // 벡터DB 상태 확인
         async function checkVectorDBStatus() {
             try {
-                const response = await fetch('/api/admin/system-status');
+                const response = await fetch('/api/system-status');
                 const data = await response.json();
 
                 if (data.status === 'success' && data.system_status) {

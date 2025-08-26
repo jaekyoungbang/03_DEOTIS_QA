@@ -9,8 +9,8 @@ class EmbeddingManager:
     
     def initialize_embeddings(self):
         """Initialize embedding model based on configuration"""
-        # Ollama BGE-M3 사용 시도 (기본값 true로 변경)
-        use_ollama_bge_m3 = os.getenv('USE_OLLAMA_BGE_M3', 'true').lower() == 'true'
+        # Ollama BGE-M3 사용 활성화 (192.168.0.224:11434 서버 사용)
+        use_ollama_bge_m3 = True
         
         if use_ollama_bge_m3:
             try:

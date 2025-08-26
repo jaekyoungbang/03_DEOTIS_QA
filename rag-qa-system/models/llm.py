@@ -1,5 +1,5 @@
 from langchain_openai import ChatOpenAI
-from langchain_community.llms import Ollama
+# from langchain_community.llms import Ollama
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from config import Config
 import requests

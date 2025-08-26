@@ -1,6 +1,10 @@
 from flask import Blueprint, request, jsonify, stream_with_context, Response
 from services.rag_chain import RAGChain
+from models.vectorstore import VectorStoreManager
+from config import Config
 import json
+import time
+import uuid
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -754,6 +758,278 @@ def local_custom():
             'error': f'로컬LLM + s3-chunking 처리 실패: {str(e)}',
             'status': 'failed'
         }), 500
+
+@chat_bp.route('/vllm-dual-stream', methods=['POST'])
+def vllm_dual_stream():
+    """vLLM 두 옵션 동시 스트리밍 (사내서버 vLLM + s3기본, 사내서버 vLLM + s3-chunking)"""
+    try:
+        print(f"🌐 [REQUEST] vLLM 듀얼 스트리밍 요청 받음")
+        print(f"📋 [REQUEST] Content-Type: {request.content_type}")
+        print(f"📋 [REQUEST] Method: {request.method}")
+        
+        data = request.get_json()
+        print(f"📊 [REQUEST] 받은 데이터: {data}")
+        
+        if not data:
+            print("❌ [REQUEST] JSON 데이터가 없음")
+            return jsonify({"error": "JSON data is required"}), 400
+        
+        question = data.get('question') or data.get('query')
+        selected_model = data.get('local_model', 'kanana8b')  # 클라이언트에서 선택한 모델
+        print(f"❓ [REQUEST] 질문: {question}")
+        print(f"🤖 [REQUEST] 선택된 모델: {selected_model}")
+        
+        if not question:
+            print("❌ [REQUEST] 질문이 없음")
+            return jsonify({"error": "Question or query is required"}), 400
+        
+        def generate():
+            import time
+            import uuid
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            from queue import Queue, Empty
+            
+            # 세션 ID 생성
+            session_id = str(uuid.uuid4())
+            
+            # 2개 vLLM 프로세스 정의
+            processes = [
+                {"llm_type": "local", "chunking": "basic", "name": "사내서버 vLLM + s3기본", "process_id": 3},
+                {"llm_type": "local", "chunking": "custom", "name": "사내서버 vLLM + s3-chunking", "process_id": 4}
+            ]
+            
+            result_queue = Queue()
+            
+            def vllm_process_task(process_info, question, session_id, selected_model):
+                """vLLM 처리 태스크 - 로깅 추가"""
+                start_time = time.time()
+                process_name = process_info["name"]
+                process_id = process_info["process_id"]
+                chunking_type = process_info["chunking"]
+                
+                print(f"🚀 [vLLM {process_id}] {process_name} 시작")
+                print(f"📊 [vLLM {process_id}] 질문: {question[:100]}...")
+                print(f"🔧 [vLLM {process_id}] 청킹 타입: {chunking_type}")
+                
+                try:
+                    # 프로세스 시작 알림
+                    result_queue.put({
+                        'type': 'process_start',
+                        'process_name': process_name,
+                        'process_id': process_id,
+                        'session_id': session_id
+                    })
+                    
+                    # vLLM 연결 확인
+                    from models.llm import LLMManager
+                    print(f"🔌 [vLLM {process_id}] LLM 매니저 생성 중...")
+                    llm_manager = LLMManager()
+                    
+                    print(f"🤖 [vLLM {process_id}] vLLM 연결 시도: 192.168.0.224:8412")
+                    vllm_llm = llm_manager.get_vllm_llm()
+                    print(f"✅ [vLLM {process_id}] vLLM 연결 성공")
+                    
+                    # 문서 검색
+                    print(f"🔍 [vLLM {process_id}] 문서 검색 시작...")
+                    chain = get_rag_chain()
+                    
+                    if chunking_type == "basic":
+                        # s3기본: DualVectorStore의 basic 컬렉션에서 검색
+                        if hasattr(chain, 'dual_vectorstore_manager') and chain.dual_vectorstore_manager:
+                            print(f"📚 [vLLM {process_id}] basic 컬렉션에서 검색")
+                            search_results = chain.dual_vectorstore_manager.similarity_search_with_score(question, "basic", k=5)
+                        else:
+                            print(f"⚠️ [vLLM {process_id}] 폴백: 기본 벡터스토어 사용")
+                            search_results = chain.vectorstore_manager.similarity_search_with_score(question, k=5)
+                    else:
+                        # s3-chunking: DualVectorStore의 custom 컬렉션에서 검색
+                        if hasattr(chain, 'dual_vectorstore_manager') and chain.dual_vectorstore_manager:
+                            print(f"📚 [vLLM {process_id}] custom 컬렉션에서 검색")
+                            search_results = chain.dual_vectorstore_manager.similarity_search_with_score(question, "custom", k=5)
+                        else:
+                            print(f"⚠️ [vLLM {process_id}] 폴백: 기본 벡터스토어 사용")
+                            search_results = chain.vectorstore_manager.similarity_search_with_score(question, k=5)
+                    
+                    print(f"📊 [vLLM {process_id}] 검색 결과: {len(search_results)}개")
+                    if search_results:
+                        print(f"🎯 [vLLM {process_id}] 최고 유사도: {search_results[0][1]:.2%}")
+                    
+                    if not search_results:
+                        result_queue.put({
+                            'type': 'process_error',
+                            'process_name': process_name,
+                            'process_id': process_id,
+                            'session_id': session_id,
+                            'error': 'no_results',
+                            'message': '검색 결과가 없습니다.',
+                            'similarity_info': [],
+                            'total_time': round(time.time() - start_time, 2),
+                            'status': 'failed'
+                        })
+                        return
+                    
+                    # 컨텍스트 준비 (vLLM 토큰 제한 고려)
+                    context = ""
+                    max_doc_length = 800  # vLLM용 최적화된 길이
+                    for doc, score in search_results[:2]:  # 2개 문서만 사용
+                        doc_content = doc.page_content
+                        if len(doc_content) > max_doc_length:
+                            doc_content = doc_content[:max_doc_length] + "..."
+                        context += f"{doc_content}\n\n"
+                        if len(context) > 1200:  # 전체 컨텍스트 제한
+                            break
+                    
+                    print(f"📝 [vLLM {process_id}] 컨텍스트 길이: {len(context)}자")
+                    
+                    # vLLM 호출을 위한 간단한 프롬프트
+                    prompt = f"""다음 정보를 바탕으로 질문에 답하세요:
+
+{context}
+
+질문: {question}
+
+답변:"""
+                    
+                    print(f"🤖 [vLLM {process_id}] vLLM 호출 시작...")
+                    print(f"🌐 [vLLM {process_id}] 서버: 192.168.0.224:8412")
+                    print(f"🔧 [vLLM {process_id}] 모델: {selected_model}")
+                    
+                    # 선택된 모델로 vLLM 인스턴스 생성
+                    from langchain_openai import ChatOpenAI
+                    config = Config.LLM_MODELS['local']
+                    custom_vllm = ChatOpenAI(
+                        model=selected_model,  # 선택된 모델 사용
+                        openai_api_base=config['base_url'] + '/v1',
+                        openai_api_key='EMPTY',
+                        temperature=config['temperature'],
+                        max_tokens=config['max_tokens']
+                    )
+                    
+                    # 커스텀 vLLM 호출
+                    response = custom_vllm.invoke(prompt)
+                    print(f"📨 [vLLM {process_id}] vLLM 응답 받음")
+                    
+                    # 응답 처리
+                    if hasattr(response, 'content'):
+                        answer = response.content
+                    elif isinstance(response, str):
+                        answer = response
+                    else:
+                        answer = str(response)
+                    
+                    print(f"✅ [vLLM {process_id}] 답변 생성 완료: {len(answer)}자")
+                    
+                    # 유사도 정보 생성
+                    similarity_info = []
+                    for i, (doc, score) in enumerate(search_results[:3], 1):
+                        similarity_info.append({
+                            'rank': i,
+                            'score': f'{score:.1%}',
+                            'source': doc.metadata.get('source_file', doc.metadata.get('source', 'Unknown')),
+                            'content_preview': doc.page_content[:100] + '...' if len(doc.page_content) > 100 else doc.page_content
+                        })
+                    
+                    end_time = time.time()
+                    total_time = end_time - start_time
+                    print(f"⏱️ [vLLM {process_id}] 총 처리 시간: {total_time:.2f}초")
+                    
+                    result_queue.put({
+                        'type': 'process_complete',
+                        'process_name': process_name,
+                        'process_id': process_id,
+                        'session_id': session_id,
+                        'answer': answer,
+                        'similarity_info': similarity_info,
+                        'total_time': round(total_time, 2),
+                        'status': 'success',
+                        'chunking_type': chunking_type
+                    })
+                    
+                    print(f"🎉 [vLLM {process_id}] 프로세스 완료!")
+                    
+                except Exception as e:
+                    end_time = time.time()
+                    total_time = end_time - start_time
+                    error_msg = str(e)
+                    print(f"❌ [vLLM {process_id}] 오류 발생: {error_msg}")
+                    import traceback
+                    print(f"🔍 [vLLM {process_id}] 상세 오류:\n{traceback.format_exc()}")
+                    
+                    # vLLM 특화 에러 메시지
+                    if "connection" in error_msg.lower() or "connect" in error_msg.lower():
+                        user_message = f"vLLM 서버 연결 실패 (192.168.0.224:8412). 서버 상태를 확인해주세요."
+                    elif "timeout" in error_msg.lower():
+                        user_message = f"vLLM 응답 시간 초과. 서버 부하를 확인해주세요."
+                    else:
+                        user_message = f"vLLM 처리 중 오류: {error_msg[:100]}"
+                    
+                    result_queue.put({
+                        'type': 'process_error',
+                        'process_name': process_name,
+                        'process_id': process_id,
+                        'session_id': session_id,
+                        'error': 'vllm_error',
+                        'message': user_message,
+                        'similarity_info': [],
+                        'total_time': round(total_time, 2),
+                        'status': 'failed'
+                    })
+            
+            # 시작 알림
+            yield f"data: {json.dumps({'type': 'all_processes_start', 'total_processes': 2, 'session_id': session_id}, ensure_ascii=False)}\n\n"
+            print(f"🚀 [MAIN] vLLM 듀얼 스트리밍 시작 - 세션: {session_id}")
+            
+            # 2개 프로세스 병렬 실행
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = []
+                for process_info in processes:
+                    future = executor.submit(vllm_process_task, process_info, question, session_id, selected_model)
+                    futures.append(future)
+                    print(f"🔄 [MAIN] {process_info['name']} 스레드 시작")
+                
+                # 결과 스트리밍
+                completed_processes = 0
+                total_processes = 2
+                
+                while completed_processes < total_processes:
+                    try:
+                        result = result_queue.get(timeout=0.1)
+                        yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
+                        
+                        if result['type'] in ['process_complete', 'process_error']:
+                            completed_processes += 1
+                            print(f"✅ [MAIN] 프로세스 완료: {result.get('process_name', 'Unknown')} ({completed_processes}/{total_processes})")
+                            
+                    except Empty:
+                        time.sleep(0.01)
+                        continue
+                
+                # futures 정리
+                for future in as_completed(futures, timeout=60):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        print(f"❌ [MAIN] 스레드 완료 오류: {e}")
+            
+            yield f"data: {json.dumps({'type': 'all_complete', 'message': 'vLLM 듀얼 처리 완료'}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+            print(f"🏁 [MAIN] 모든 vLLM 프로세스 완료")
+        
+        return Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'X-Accel-Buffering': 'no'
+            }
+        )
+    
+    except Exception as e:
+        print(f"❌ [MAIN] vLLM 듀얼 스트리밍 오류: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @chat_bp.route('/clear-memory', methods=['POST'])
 def clear_memory():

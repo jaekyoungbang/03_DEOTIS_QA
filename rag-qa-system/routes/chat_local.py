@@ -1,20 +1,20 @@
 from flask import Blueprint, request, jsonify
-from services.enhanced_rag_chain import EnhancedRAGChain
+from services.rag_chain import RAGChain
 from models.vectorstore import get_vectorstore
 import time
 
 chat_local_bp = Blueprint('chat_local', __name__)
 
 # 전역 RAG 체인 인스턴스
-enhanced_rag_chain = None
+rag_chain = None
 
-def get_enhanced_rag_chain():
-    """Enhanced RAG Chain 인스턴스 가져오기"""
-    global enhanced_rag_chain
-    if enhanced_rag_chain is None:
+def get_rag_chain():
+    """RAG Chain 인스턴스 가져오기"""
+    global rag_chain
+    if rag_chain is None:
         vectorstore = get_vectorstore()
-        enhanced_rag_chain = EnhancedRAGChain(vectorstore)
-    return enhanced_rag_chain
+        rag_chain = RAGChain(vectorstore)
+    return rag_chain
 
 @chat_local_bp.route('/local', methods=['POST'])
 def chat_local():
@@ -29,8 +29,8 @@ def chat_local():
         
         start_time = time.time()
         
-        # Enhanced RAG Chain에서 로컬 LLM만 사용
-        rag_chain = get_enhanced_rag_chain()
+        # RAG Chain에서 로컬 LLM만 사용
+        rag_chain = get_rag_chain()
         
         # 벤치마킹 모드를 비활성화하고 로컬 LLM만 사용하도록 설정
         rag_chain.use_benchmarking = False

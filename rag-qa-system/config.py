@@ -57,7 +57,7 @@ class Config:
         },
         'local': {
             'provider': 'vllm',
-            'model_name': os.getenv('LOCAL_LLM_MODEL', './models/kanana8b'),
+            'model_name': os.getenv('LOCAL_LLM_MODEL', 'kanana8b'),
             'temperature': 0.3,
             'max_tokens': 2000,
             'system_prompt': """당신은 BC카드 업무처리 전문가입니다. 
