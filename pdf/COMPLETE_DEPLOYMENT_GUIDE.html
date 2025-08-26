@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG QA 시스템 완전 배포 가이드</title>
+    <style>
+        @page {
+            margin: 2cm;
+            size: A4;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            page-break-before: always;
+        }
+        
+        h1:first-child {
+            page-break-before: auto;
+        }
+        
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            margin-top: 25px;
+        }
+        
+        h4 {
+            color: #7f8c8d;
+            margin-top: 20px;
+        }
+        
+        code {
+            background: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        
+        .architecture-diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre-line;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 5px 0;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc ul ul {
+            padding-left: 20px;
+        }
+        
+        .checklist {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .checklist ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .checklist li:before {
+            content: "☐ ";
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .step-number {
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .command-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-left: 4px solid #4299e1;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        @media print {
+            body {
+                font-size: 12pt;
+            }
+            
+            h1 {
+                font-size: 18pt;
+            }
+            
+            h2 {
+                font-size: 16pt;
+            }
+            
+            h3 {
+                font-size: 14pt;
+            }
+            
+            pre {
+                font-size: 10pt;
+            }
+            
+            .architecture-diagram {
+                font-size: 10pt;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>RAG QA 시스템 완전 배포 가이드</h1>
+    
+    <div class="toc">
+        <h2>📋 목차</h2>
+        <ul>
+            <li><a href="#시스템-개요">1. 시스템 개요</a></li>
+            <li><a href="#langchain-프레임워크-이해">2. LangChain 프레임워크 이해</a></li>
+            <li><a href="#vector-db-및-청킹-전략-확인">3. Vector DB 및 청킹 전략 확인</a></li>
+            <li><a href="#서버-업로드-방법">4. 서버 업로드 방법</a></li>
+            <li><a href="#linux-서버-배포">5. Linux 서버 배포</a></li>
+            <li><a href="#시스템-구성도">6. 시스템 구성도</a></li>
+            <li><a href="#운영-및-관리">7. 운영 및 관리</a></li>
+            <li><a href="#배포-체크리스트">8. 배포 체크리스트</a></li>
+        </ul>
+    </div>
+
+    <h2 id="시스템-개요">1. 시스템 개요</h2>
+    
+    <h3>🏗️ 전체 아키텍처</h3>
+    <div class="architecture-diagram">
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│    사용자       │    │   Nginx         │    │  Flask App      │
+│   (브라우저)    │◄──►│ 리버스 프록시    │◄──►│   (5000)       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                      │
+                                               ┌──────▼──────┐
+                                               │  야놀자 앱   │
+                                               │   (5001)   │
+                                               └──────┬──────┘
+                                                      │
+┌─────────────────┐    ┌─────────────────┐    ┌──────▼──────┐
+│   Vector DB     │    │     Redis       │    │   Ollama    │
+│   (ChromaDB)    │    │    캐시         │    │LLM 서버(11434)│
+└─────────────────┘    └─────────────────┘    └─────────────┘
+    </div>
+
+    <h3>🎯 핵심 구성요소</h3>
+    <ul>
+        <li><strong>웹서버</strong>: Flask (메인 RAG 시스템)</li>
+        <li><strong>API 문서</strong>: Swagger/OpenAPI 통합</li>
+        <li><strong>LLM 서버</strong>: Ollama + 야놀자 모델</li>
+        <li><strong>Vector DB</strong>: ChromaDB (문서 임베딩 저장)</li>
+        <li><strong>캐시</strong>: Redis (응답 캐싱)</li>
+        <li><strong>프록시</strong>: Nginx (로드 밸런싱, SSL)</li>
+    </ul>
+
+    <h2 id="langchain-프레임워크-이해">2. LangChain 프레임워크 이해</h2>
+    
+    <h3>🔗 LangChain이란?</h3>
+    <p>LangChain은 <strong>LLM 애플리케이션 개발을 위한 종합 프레임워크</strong>입니다.</p>
+    
+    <h3>📚 주요 기능</h3>
+    <ol>
+        <li><strong>문서 로더</strong>: PDF, DOCX, TXT 등 다양한 형식 지원</li>
+        <li><strong>텍스트 스플리터</strong>: 문서를 적절한 크기로 청킹</li>
+        <li><strong>임베딩</strong>: 텍스트를 벡터로 변환</li>
+        <li><strong>벡터스토어</strong>: ChromaDB, Pinecone 등과 연동</li>
+        <li><strong>체인</strong>: RAG 파이프라인 구성</li>
+        <li><strong>메모리</strong>: 대화 컨텍스트 관리</li>
+    </ol>
+
+    <h3>🔄 RAG 시스템에서의 역할</h3>
+    <div class="architecture-diagram">
+문서 → LangChain → 청킹 → 임베딩 → Vector DB
+                                      ↓
+사용자 질문 → 임베딩 → 유사도 검색 → 컨텍스트 → LLM
+    </div>
+
+    <h3>💻 코드 예시</h3>
+    <pre><code>from langchain.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import Chroma
+
+# 문서 로드
+loader = PyPDFLoader("document.pdf")
+documents = loader.load()
+
+# 청킹 전략
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=800,
+    chunk_overlap=150
+)
+chunks = text_splitter.split_documents(documents)
+
+# 임베딩 및 벡터 저장
+embeddings = HuggingFaceEmbeddings()
+vectorstore = Chroma.from_documents(chunks, embeddings)</code></pre>
+
+    <h2 id="vector-db-및-청킹-전략-확인">3. Vector DB 및 청킹 전략 확인</h2>
+    
+    <h3>🔍 Vector DB 상태 확인</h3>
+    <div class="command-block">
+        <code># Vector DB 데이터 확인<br>python3 check_vectordb.py</code>
+    </div>
+
+    <div class="info">
+        <h4>실행 결과 예시:</h4>
+        <pre><code>🔍 Vector DB 데이터 확인 중...
+============================================================
+📁 Vector DB 경로: ./data/vectordb
+📊 컬렉션 목록:
+
+1. 컬렉션명: custom_chunks
+   - 문서 수: 92개
+   - 메타데이터 필드: [source, chunk_index, chunking_strategy]
+
+2. 컬렉션명: basic_chunks  
+   - 문서 수: 92개
+   - 메타데이터 필드: [source, chunk_index, file_type]
+
+📊 문서 수 통계:
+   - 기본 청킹: 92개
+   - 커스텀 청킹: 92개
+   - 전체: 184개
+
+💾 디스크 사용량:
+   - Vector DB 총 크기: 79.53 MB</code></pre>
+    </div>
+
+    <h3>✂️ 청킹 전략 테스트</h3>
+    <div class="command-block">
+        <code># 청킹 전략 확인<br>python3 check_chunking.py</code>
+    </div>
+
+    <div class="info">
+        <h4>실행 결과 예시:</h4>
+        <pre><code>✂️ Chunking 전략 확인
+============================================================
+📋 사용 가능한 청킹 전략:
+   1. basic - 기본 청킹 (800자/150중첩)
+   2. semantic - 의미 기반 청킹  
+   3. hybrid - 하이브리드 청킹
+   4. custom_delimiter - 커스텀 구분자 (/$$/)
+
+🔹 CUSTOM_DELIMITER 전략 테스트:
+📊 청킹 결과:
+   - 청크 개수: 3
+   - 평균 청크 크기: 104.3자
+
+   청크 #1: 제1장 연회비 안내...
+   청크 #2: 제2장 연회비 면제 조건...
+   청크 #3: 제3장 특별 혜택...</code></pre>
+    </div>
+
+    <h3>📈 청킹 전략 비교</h3>
+    <table>
+        <tr>
+            <th>전략</th>
+            <th>특징</th>
+            <th>사용 시기</th>
+        </tr>
+        <tr>
+            <td><strong>Basic</strong></td>
+            <td>고정 크기 분할</td>
+            <td>일반 문서</td>
+        </tr>
+        <tr>
+            <td><strong>Semantic</strong></td>
+            <td>의미 단위 분할</td>
+            <td>구조화된 문서</td>
+        </tr>
+        <tr>
+            <td><strong>Hybrid</strong></td>
+            <td>기본+의미 결합</td>
+            <td>복합 문서</td>
+        </tr>
+        <tr>
+            <td><strong>Custom Delimiter</strong></td>
+            <td>구분자 기반</td>
+            <td>특별 포맷 문서</td>
+        </tr>
+    </table>
+
+    <h2 id="서버-업로드-방법">4. 서버 업로드 방법</h2>
+    
+    <h3>📁 업로드할 파일 목록</h3>
+    <pre><code>rag-qa-system/
+├── app.py                    # 메인 Flask 앱
+├── yanolja_app.py           # 야놀자 전용 앱  
+├── config.py                # 설정 파일
+├── yanolja_config.py        # 야놀자 설정
+├── yanolja_llm_client.py    # LLM 클라이언트
+├── requirements.txt         # Python 의존성
+├── .env                     # 환경 변수
+├── models/                  # 모델 클래스들
+│   ├── embeddings.py
+│   ├── vectorstore.py
+│   └── dual_llm.py
+├── routes/                  # API 라우트
+│   ├── chat.py
+│   └── unified_benchmark.py
+├── services/                # 서비스 로직
+│   ├── chunking_strategies.py
+│   ├── document_processor.py
+│   └── rag_chain.py  
+├── templates/               # HTML 템플릿
+│   ├── main_rag_system.html
+│   └── yanolja_main.html
+├── static/                  # 정적 파일
+├── data/                    # 데이터 파일
+│   └── vectordb/           # Vector DB
+└── check_*.py              # 확인 스크립트</code></pre>
+
+    <h3>🚀 업로드 방법</h3>
+    
+    <h4><span class="step-number">1</span>SCP를 사용한 업로드</h4>
+    <div class="command-block">
+        <code># 전체 프로젝트 압축<br>
+cd /mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/<br>
+tar -czf rag-qa-system.tar.gz rag-qa-system/<br>
+<br>
+# 서버로 업로드<br>
+scp rag-qa-system.tar.gz user@your-server.com:/tmp/<br>
+<br>
+# 서버에서 압축 해제<br>
+ssh user@your-server.com<br>
+cd /tmp<br>
+sudo tar -xzf rag-qa-system.tar.gz -C /opt/<br>
+sudo chown -R $USER:$USER /opt/rag-qa-system</code>
+    </div>
+
+    <h4><span class="step-number">2</span>Rsync를 사용한 동기화</h4>
+    <div class="command-block">
+        <code># 효율적인 파일 동기화<br>
+rsync -avz --progress \<br>
+    --exclude='*.pyc' \<br>
+    --exclude='__pycache__' \<br>
+    --exclude='.git' \<br>
+    /mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system/ \<br>
+    user@your-server.com:/opt/rag-qa-system/</code>
+    </div>
+
+    <h4><span class="step-number">3</span>Git을 사용한 배포</h4>
+    <div class="command-block">
+        <code># 로컬에서 Git 저장소 초기화<br>
+cd /mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system<br>
+git init<br>
+git add .<br>
+git commit -m "Initial commit"<br>
+git remote add origin https://your-git-repository.git<br>
+git push -u origin main<br>
+<br>
+# 서버에서 클론<br>
+ssh user@your-server.com<br>
+cd /opt<br>
+git clone https://your-git-repository.git rag-qa-system</code>
+    </div>
+
+    <h2 id="linux-서버-배포">5. Linux 서버 배포</h2>
+    
+    <h3>🖥️ 서버 요구사항</h3>
+    
+    <h4>최소 사양</h4>
+    <ul>
+        <li><strong>OS</strong>: Ubuntu 22.04 LTS 이상</li>
+        <li><strong>CPU</strong>: 8 cores (Intel/AMD)</li>
+        <li><strong>RAM</strong>: 16GB</li>
+        <li><strong>Storage</strong>: 100GB SSD</li>
+        <li><strong>GPU</strong>: RTX 3060 이상 (LLM 추론용)</li>
+    </ul>
+
+    <h4>권장 사양</h4>
+    <ul>
+        <li><strong>CPU</strong>: 16 cores</li>
+        <li><strong>RAM</strong>: 32GB</li>
+        <li><strong>Storage</strong>: 500GB NVMe SSD</li>
+        <li><strong>GPU</strong>: RTX 4070 이상</li>
+    </ul>
+
+    <h3>🔧 <span class="step-number">1</span>시스템 초기 설정</h3>
+    <div class="command-block">
+        <code># 시스템 업데이트<br>
+sudo apt update && sudo apt upgrade -y<br>
+<br>
+# 필수 패키지 설치<br>
+sudo apt install -y \<br>
+    python3.10 python3.10-venv python3-pip \<br>
+    git nginx supervisor redis-server sqlite3 \<br>
+    curl wget build-essential python3-dev \<br>
+    software-properties-common apt-transport-https<br>
+<br>
+# NVIDIA 드라이버 설치 (GPU 사용 시)<br>
+sudo apt install nvidia-driver-530 nvidia-cuda-toolkit</code>
+    </div>
+
+    <h3>⚡ <span class="step-number">2</span>Ollama 및 LLM 설치</h3>
+    <div class="command-block">
+        <code># Ollama 설치<br>
+curl -fsSL https://ollama.ai/install.sh | sh<br>
+<br>
+# 시스템 서비스 등록<br>
+sudo systemctl start ollama<br>
+sudo systemctl enable ollama<br>
+<br>
+# 야놀자 모델 다운로드<br>
+ollama pull llama3.1:8b-instruct-q4_0<br>
+ollama pull llama3.1:70b-instruct-q4_0<br>
+ollama pull llama3.2:3b-instruct-q8_0<br>
+<br>
+# 모델 확인<br>
+ollama list</code>
+    </div>
+
+    <h3>🐍 <span class="step-number">3</span>Python 환경 설정</h3>
+    <div class="command-block">
+        <code># 프로젝트 디렉토리로 이동<br>
+cd /opt/rag-qa-system<br>
+<br>
+# 가상환경 생성<br>
+python3.10 -m venv venv<br>
+source venv/bin/activate<br>
+<br>
+# 의존성 설치<br>
+pip install --upgrade pip<br>
+pip install -r requirements.txt<br>
+<br>
+# 환경 변수 설정<br>
+cp .env.example .env<br>
+nano .env  # 환경 변수 수정</code>
+    </div>
+
+    <h3>🗃️ <span class="step-number">4</span>데이터베이스 초기화</h3>
+    <div class="command-block">
+        <code># Vector DB 초기화<br>
+python3 load_documents.py<br>
+<br>
+# 상태 확인<br>
+python3 check_vectordb.py<br>
+python3 check_chunking.py<br>
+<br>
+# Redis 설정<br>
+sudo systemctl start redis-server<br>
+sudo systemctl enable redis-server</code>
+    </div>
+
+    <h3>🌐 <span class="step-number">5</span>웹서버 설정</h3>
+    
+    <h4>Systemd 서비스 등록</h4>
+    <div class="command-block">
+        <code># 메인 앱 서비스<br>
+sudo tee /etc/systemd/system/rag-qa-system.service << 'EOF'<br>
+[Unit]<br>
+Description=RAG QA System Flask Application<br>
+After=network.target redis.service ollama.service<br>
+<br>
+[Service]<br>
+Type=notify<br>
+User=ubuntu<br>
+Group=ubuntu<br>
+WorkingDirectory=/opt/rag-qa-system<br>
+Environment="PATH=/opt/rag-qa-system/venv/bin"<br>
+ExecStart=/opt/rag-qa-system/venv/bin/gunicorn \<br>
+    --config /opt/rag-qa-system/gunicorn_config.py \<br>
+    app:app<br>
+<br>
+Restart=always<br>
+RestartSec=10<br>
+<br>
+[Install]<br>
+WantedBy=multi-user.target<br>
+EOF</code>
+    </div>
+
+    <h3>🔄 <span class="step-number">6</span>Nginx 리버스 프록시 설정</h3>
+    <div class="command-block">
+        <code># Nginx 설정 파일<br>
+sudo tee /etc/nginx/sites-available/rag-qa-system << 'EOF'<br>
+upstream rag_qa_backend {<br>
+    server 127.0.0.1:5000;<br>
+}<br>
+<br>
+upstream yanolja_backend {<br>
+    server 127.0.0.1:5001;<br>
+}<br>
+<br>
+server {<br>
+    listen 80;<br>
+    server_name your-domain.com;<br>
+    <br>
+    client_max_body_size 100M;<br>
+    <br>
+    # 메인 애플리케이션<br>
+    location / {<br>
+        proxy_pass http://rag_qa_backend;<br>
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;<br>
+        proxy_set_header Host $http_host;<br>
+        proxy_redirect off;<br>
+    }<br>
+    <br>
+    # Swagger API 문서<br>
+    location /swagger {<br>
+        proxy_pass http://rag_qa_backend/swagger;<br>
+    }<br>
+}<br>
+EOF</code>
+    </div>
+
+    <h3>🚀 <span class="step-number">7</span>서비스 시작</h3>
+    <div class="command-block">
+        <code># 서비스 시작<br>
+sudo systemctl start redis-server<br>
+sudo systemctl start ollama<br>
+sudo systemctl start rag-qa-system<br>
+sudo systemctl start yanolja-app<br>
+sudo systemctl start nginx<br>
+<br>
+# 부팅 시 자동 시작<br>
+sudo systemctl enable redis-server<br>
+sudo systemctl enable ollama<br>
+sudo systemctl enable rag-qa-system<br>
+sudo systemctl enable yanolja-app<br>
+sudo systemctl enable nginx</code>
+    </div>
+
+    <h2 id="시스템-구성도">6. 시스템 구성도</h2>
+    
+    <h3>🏗️ 전체 시스템 아키텍처</h3>
+    <div class="architecture-diagram">
+                    ┌─────────────────┐
+                    │   Load Balancer │
+                    │   (Nginx:80,443)│
+                    └─────────┬───────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+    ┌─────────▼──────┐ ┌─────▼──────┐ ┌─────▼──────┐
+    │  Flask App     │ │ Yanolja App │ │   Static   │
+    │   (5000)       │ │   (5001)    │ │   Files    │
+    └─────────┬──────┘ └─────┬──────┘ └────────────┘
+              │               │
+              └───────┬───────┘
+                      │
+          ┌───────────▼───────────┐
+          │     Service Layer     │
+          └───────────┬───────────┘
+                      │
+    ┌─────────────────┼─────────────────┐
+    │                 │                 │
+┌───▼───┐ ┌──────▼──────┐ ┌─────▼─────┐
+│Vector │ │   Ollama    │ │   Redis   │
+│  DB   │ │LLM(11434)   │ │ Cache(6379)│
+│(Chroma│ │             │ │           │
+│  DB)  │ └─────────────┘ └───────────┘
+└───────┘
+    </div>
+
+    <h3>📊 데이터 플로우</h3>
+    <div class="architecture-diagram">
+1. 사용자 요청 → Nginx → Flask App
+                         │
+2. 질문 분석 ← ─ ─ ─ ─ ─ ─ ┘
+   │
+3. Vector DB 검색 → 유사 문서 검색
+   │
+4. 컨텍스트 생성 → Ollama LLM 호출
+   │
+5. 응답 생성 → 캐싱(Redis) → 사용자
+    </div>
+
+    <h2 id="운영-및-관리">7. 운영 및 관리</h2>
+    
+    <h3>📈 모니터링</h3>
+    
+    <h4>로그 확인</h4>
+    <div class="command-block">
+        <code># 실시간 로그 모니터링<br>
+sudo journalctl -u rag-qa-system -f<br>
+sudo journalctl -u yanolja-app -f<br>
+tail -f /var/log/rag-qa-system/error.log</code>
+    </div>
+
+    <h4>헬스체크 스크립트</h4>
+    <pre><code>#!/bin/bash
+# healthcheck.sh
+
+check_service() {
+    if systemctl is-active --quiet $1; then
+        echo "✅ $1 is running"
+    else
+        echo "❌ $1 is not running"
+        sudo systemctl start $1
+    fi
+}
+
+echo "=== RAG QA System Health Check ==="
+check_service "rag-qa-system"
+check_service "yanolja-app" 
+check_service "ollama"
+check_service "redis-server"
+check_service "nginx"
+
+# API 헬스체크
+curl -s http://localhost:5000/health
+curl -s http://localhost:5001/health</code></pre>
+
+    <h3>💾 백업 및 복구</h3>
+    
+    <h4>자동 백업 스크립트</h4>
+    <pre><code>#!/bin/bash
+# backup.sh
+
+BACKUP_DIR="/backup/rag-qa-system"  
+DATE=$(date +%Y%m%d_%H%M%S)
+mkdir -p $BACKUP_DIR
+
+# Vector DB 백업
+tar -czf $BACKUP_DIR/vectordb_$DATE.tar.gz /opt/rag-qa-system/data/vectordb
+
+# 설정 파일 백업
+tar -czf $BACKUP_DIR/config_$DATE.tar.gz /opt/rag-qa-system/.env
+
+# 7일 이상 된 백업 삭제
+find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
+
+echo "백업 완료: $DATE"</code></pre>
+
+    <h3>🚨 문제 해결</h3>
+    
+    <h4>일반적인 문제들</h4>
+    
+    <div class="warning">
+        <h4>1. 서비스 시작 실패</h4>
+        <div class="command-block">
+            <code># 로그 확인<br>
+sudo journalctl -xe -u rag-qa-system<br>
+<br>
+# 포트 충돌 확인<br>
+sudo netstat -tlnp | grep 5000<br>
+<br>
+# 프로세스 강제 종료<br>
+sudo pkill -f gunicorn</code>
+        </div>
+    </div>
+
+    <div class="warning">
+        <h4>2. Vector DB 접근 오류</h4>
+        <div class="command-block">
+            <code># 권한 확인<br>
+ls -la /opt/rag-qa-system/data/vectordb<br>
+sudo chown -R ubuntu:ubuntu /opt/rag-qa-system<br>
+<br>
+# DB 재초기화<br>
+rm -rf /opt/rag-qa-system/data/vectordb/*<br>
+python3 load_documents.py</code>
+        </div>
+    </div>
+
+    <h2 id="배포-체크리스트">8. 배포 체크리스트</h2>
+    
+    <div class="checklist">
+        <h3>📋 배포 전 체크리스트</h3>
+        <ul>
+            <li>서버 사양 확인 (CPU, RAM, GPU)</li>
+            <li>Ubuntu 22.04 설치 완료</li>
+            <li>필수 패키지 설치</li>
+            <li>Python 3.10 환경 설정</li>
+            <li>Git 또는 파일 업로드 준비</li>
+        </ul>
+    </div>
+
+    <div class="checklist">
+        <h3>🔧 설치 체크리스트</h3>
+        <ul>
+            <li>Ollama 설치 및 모델 다운로드</li>
+            <li>Redis 서버 설치</li>
+            <li>Nginx 설치 및 설정</li>
+            <li>프로젝트 파일 업로드</li>
+            <li>Python 가상환경 및 의존성 설치</li>
+            <li>환경변수 설정 (.env)</li>
+        </ul>
+    </div>
+
+    <div class="checklist">
+        <h3>🚀 실행 체크리스트</h3>
+        <ul>
+            <li>Vector DB 초기화</li>
+            <li>Systemd 서비스 등록</li>
+            <li>서비스 시작 및 활성화</li>
+            <li>Nginx 프록시 설정</li>
+            <li>SSL 인증서 설정</li>
+            <li>방화벽 설정</li>
+        </ul>
+    </div>
+
+    <div class="checklist">
+        <h3>✅ 검증 체크리스트</h3>
+        <ul>
+            <li>웹 인터페이스 접속 확인</li>
+            <li>API 엔드포인트 테스트</li>
+            <li>Swagger 문서 접근 확인</li>
+            <li>헬스체크 응답 확인</li>
+            <li>로그 생성 확인</li>
+            <li>백업 스크립트 테스트</li>
+        </ul>
+    </div>
+
+    <h3>📞 접속 URL 확인</h3>
+    <ul>
+        <li><strong>메인 시스템</strong>: http://your-domain.com</li>
+        <li><strong>야놀자 앱</strong>: http://your-domain.com/yanolja</li>
+        <li><strong>API 문서</strong>: http://your-domain.com/swagger</li>
+        <li><strong>헬스체크</strong>: http://your-domain.com/health</li>
+    </ul>
+
+    <h2>9. 결론</h2>
+    
+    <div class="highlight">
+        <h3>🎯 핵심 포인트</h3>
+        <ol>
+            <li><strong>LangChain</strong>: LLM 애플리케이션 개발 프레임워크</li>
+            <li><strong>Vector DB</strong>: ChromaDB로 임베딩 벡터 저장</li>
+            <li><strong>청킹 전략</strong>: 4가지 전략으로 문서 최적화</li>
+            <li><strong>배포 방법</strong>: SCP, Rsync, Git 중 선택</li>
+            <li><strong>시스템 구성</strong>: 웹서버 1개 + Swagger + LLM 서버</li>
+        </ol>
+    </div>
+
+    <div class="info">
+        <h3>🔄 운영 팁</h3>
+        <ul>
+            <li>정기적인 백업 수행</li>
+            <li>로그 모니터링</li>
+            <li>성능 지표 추적</li>
+            <li>보안 업데이트 적용</li>
+        </ul>
+    </div>
+
+    <p>성공적인 배포를 위해 단계별로 천천히 진행하시고, 문제 발생 시 로그를 먼저 확인하시기 바랍니다!</p>
+</body>
+</html>

@@ -19,6 +19,13 @@
             margin-bottom: 15px;
             padding: 10px;
             border-radius: 10px;
+            position: relative;
+        }
+        .message-time {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-top: 5px;
+            opacity: 0.8;
         }
         .user-message {
             background-color: #007bff;
@@ -110,6 +117,300 @@
             border-radius: 5px;
             margin: 10px 0;
         }
+        .progress-container {
+            margin: 15px 0;
+            display: none;
+        }
+        .progress {
+            height: 25px;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+            font-size: 0.9em;
+        }
+        .chunking-strategy-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #dee2e6;
+        }
+        .search-results {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .search-header {
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: white;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .result-rank {
+            background-color: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .result-info {
+            flex: 1;
+        }
+        .result-source {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-right: 8px;
+        }
+        .result-title {
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        .result-score {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .search-status {
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .llm-status {
+            padding: 10px;
+            background-color: #fff3cd;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #ffc107;
+        }
+        .ai-answer {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            line-height: 1.6;
+        }
+        .document-group {
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #fafafa;
+        }
+        .doc-group-title {
+            color: #0066cc;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .individual-answer {
+            margin: 10px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            align-items: flex-start;
+            animation: slideIn 0.3s ease-out;
+        }
+        .rank-badge {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .score-badge {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            display: inline-block;
+        }
+        .rank-answer {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin: 8px 0;
+            padding: 12px;
+            background-color: #f8f9fa;
+        }
+        .rank-header {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .source-info {
+            margin-top: 8px;
+            font-size: 0.8em;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .process-status {
+            color: #6c757d;
+            font-style: italic;
+            margin: 5px 0;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .process-answer {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        .search-info-section {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        .search-info-section h6 {
+            margin: 0 0 8px 0;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        .search-doc-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            font-size: 0.8em;
+        }
+        .doc-rank {
+            background: #007bff;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            min-width: 25px;
+            text-align: center;
+        }
+        .doc-score {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+        .doc-source {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .source-badge {
+            background: #6c757d;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+        .llm-response {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+        .llm-response h6 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        .answer-section {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .similarity-section {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        .similarity-section h6 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        .similarity-item {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 6px;
+            border-left: 3px solid #007bff;
+        }
+        .similarity-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+        .similarity-rank {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .similarity-score {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.8em;
+        }
+        .similarity-source {
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+        .similarity-content {
+            color: #495057;
+            font-size: 0.85em;
+            line-height: 1.4;
+            font-style: italic;
+        }
+            margin-right: 15px;
+            min-width: 60px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .answer-status {
+            flex: 1;
+            padding: 10px;
+            background-color: #fff3cd;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+        }
+        .answer-content {
+            flex: 1;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
     </style>
 </head>
 <body>
@@ -136,11 +437,50 @@
                     <input type="number" class="form-control" id="chunkOverlap" value="200">
                 </div>
             </div>
+            
+            <!-- 청킹 전략 선택 섹션 -->
+            <div class="chunking-strategy-section">
+                <h5><i class="fas fa-cut"></i> 청킹 전략 설정</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">청킹 전략:</label>
+                        <select class="form-select" id="chunkingStrategy">
+                            <option value="basic" selected>기본 청킹 (1000자/200자 중첩)</option>
+                            <option value="custom_delimiter">커스텀 구분자 (/$$/ 기준)</option>
+                            <option value="semantic">의미 기반 청킹</option>
+                            <option value="hybrid">하이브리드 청킹</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">검색 모드:</label>
+                        <select class="form-select" id="searchMode">
+                            <option value="basic" selected>기본 청킹만 검색</option>
+                            <option value="custom">커스텀 청킹만 검색</option>
+                            <option value="dual">이중 검색 (기본+커스텀)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        💡 /$$/ 구분자가 포함된 문서는 자동으로 커스텀 청킹이 적용됩니다.
+                    </small>
+                </div>
+            </div>
             <div class="vectordb-info mt-3">
                 <strong>📊 벡터DB 정보:</strong> <span id="vectorDbInfo">로딩 중...</span>
                 <button class="btn btn-sm btn-outline-danger ms-2" onclick="clearVectorDB()">
                     <i class="fas fa-trash"></i> DB 초기화
                 </button>
+                
+                <!-- 성능 설명 -->
+                <div class="mt-2">
+                    <small class="text-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>성능 정보:</strong> 
+                        문서 업로드 시 1-3초 소요 (OpenAI 임베딩 생성), 
+                        검색 시 캐시 활용으로 0.2초 이내 응답
+                    </small>
+                </div>
             </div>
         </div>
         
@@ -166,6 +506,20 @@
                     <button class="btn btn-primary w-100" onclick="uploadDocument()">
                         <i class="fas fa-upload"></i> 파일 업로드
                     </button>
+                </div>
+            </div>
+            
+            <!-- 진행률 표시 -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress">
+                    <div class="progress-bar bg-primary" id="progressBar" role="progressbar" style="width: 0%">
+                        <span id="progressText">대기 중...</span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small id="progressDetails" class="text-muted">
+                        💡 문서 처리는 임베딩 생성으로 인해 1-3초 소요됩니다. 검색은 캐시로 0.2초 이내!
+                    </small>
                 </div>
             </div>
             
@@ -238,6 +592,17 @@
             loadDocumentList();
             loadVectorDBInfo();
         };
+
+        // Get current time in HH:MM:SS format
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            });
+        }
 
         // Advanced markdown formatting function
         function formatMarkdown(text) {
@@ -394,6 +759,51 @@
             }
         }
 
+        // Progress bar utility functions with timing
+        let uploadStartTime = 0;
+        
+        function showProgress(text, percentage, showTiming = false) {
+            const container = document.getElementById('progressContainer');
+            const bar = document.getElementById('progressBar');
+            const textElement = document.getElementById('progressText');
+            const detailsElement = document.getElementById('progressDetails');
+            
+            container.style.display = 'block';
+            bar.style.width = percentage + '%';
+            
+            if (percentage === 0) {
+                uploadStartTime = Date.now();
+                textElement.textContent = text;
+                detailsElement.innerHTML = '🔄 시작 중...';
+            } else if (percentage < 100) {
+                const elapsed = ((Date.now() - uploadStartTime) / 1000).toFixed(1);
+                textElement.textContent = text;
+                
+                if (percentage <= 30) {
+                    detailsElement.innerHTML = `📁 파일 로딩 중... (${elapsed}초 경과)`;
+                } else if (percentage <= 60) {
+                    detailsElement.innerHTML = `✂️ 청킹 처리 중... (${elapsed}초 경과)`;
+                } else if (percentage <= 90) {
+                    detailsElement.innerHTML = `🤖 OpenAI 임베딩 생성 중... (${elapsed}초 경과) - 가장 오래 걸리는 단계`;
+                } else {
+                    detailsElement.innerHTML = `💾 벡터DB 저장 중... (${elapsed}초 경과)`;
+                }
+            } else {
+                const totalTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+                textElement.textContent = `완료! (총 ${totalTime}초)`;
+                detailsElement.innerHTML = `✅ 처리 완료! 이제 빠른 검색이 가능합니다. (평균 0.2초)`;
+                
+                setTimeout(() => {
+                    container.style.display = 'none';
+                    bar.style.width = '0%';
+                }, 3000);
+            }
+        }
+
+        function hideProgress() {
+            document.getElementById('progressContainer').style.display = 'none';
+        }
+
         async function sendQuestion() {
             const input = document.getElementById('questionInput');
             const question = input.value.trim();
@@ -402,11 +812,249 @@
             const chatContainer = document.getElementById('chatContainer');
             const useMemory = document.getElementById('useMemory').checked;
             const llmModel = document.getElementById('llmModel').value;
+            const searchMode = document.getElementById('searchMode').value;
 
-            // Add user message
-            chatContainer.innerHTML += `<div class="message user-message">${question}</div>`;
+            // Add user message with timestamp
+            const userTime = getCurrentTime();
+            chatContainer.innerHTML += `<div class="message user-message">${question}<div class="message-time">${userTime}</div></div>`;
             input.value = '';
 
+            // Create AI message container for streaming
+            const aiMessageId = 'ai-message-' + Date.now();
+            const loadingHTML = `
+                <div class="message ai-message" id="${aiMessageId}">
+                    <div class="streaming-content">
+                        <div class="loading-indicator">
+                            <i class="fas fa-search fa-spin"></i> 검색 중...
+                        </div>
+                    </div>
+                    <div class="message-time">${getCurrentTime()}</div>
+                </div>
+            `;
+            chatContainer.innerHTML += loadingHTML;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                // Use streaming endpoint
+                const response = await fetch('/api/chat/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        question: question,
+                        use_memory: useMemory,
+                        llm_model: llmModel,
+                        search_mode: searchMode
+                    })
+                });
+
+                if (!response.body) {
+                    throw new Error('스트리밍을 지원하지 않습니다.');
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                const aiMessageContainer = document.getElementById(aiMessageId);
+                const contentContainer = aiMessageContainer.querySelector('.streaming-content');
+                
+                // Clear loading indicator
+                contentContainer.innerHTML = '<div class="streaming-answer"></div>';
+                const answerContainer = contentContainer.querySelector('.streaming-answer');
+
+                let buffer = '';
+                let isFirstChunk = true;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (line.trim() === '') continue;
+                        
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                // Add final timestamp and metadata
+                                const finalTime = getCurrentTime();
+                                aiMessageContainer.querySelector('.message-time').textContent = finalTime;
+                                
+                                // Add model info
+                                const modelInfo = document.createElement('div');
+                                modelInfo.className = 'mt-2';
+                                modelInfo.innerHTML = `<small class="text-muted">🤖 Model: ${llmModel} (스트리밍)</small>`;
+                                contentContainer.appendChild(modelInfo);
+                                return;
+                            }
+                            
+                            try {
+                                const chunk = JSON.parse(data);
+                                
+                                if (chunk.type === 'search_start') {
+                                    answerContainer.innerHTML = `<div class="search-status"><i class="fas fa-search fa-spin"></i> ${chunk.message}</div>`;
+                                } else if (chunk.type === 'search_result_found') {
+                                    // Show each search result immediately
+                                    const searchResults = answerContainer.querySelector('.search-results') || 
+                                        (() => {
+                                            const div = document.createElement('div');
+                                            div.className = 'search-results';
+                                            div.innerHTML = '<div class="search-header"><i class="fas fa-file-search"></i> 검색 결과:</div>';
+                                            answerContainer.appendChild(div);
+                                            return div;
+                                        })();
+                                    
+                                    const resultDiv = document.createElement('div');
+                                    resultDiv.className = 'search-result-item';
+                                    resultDiv.innerHTML = `
+                                        <div class="result-rank">1위</div>
+                                        <div class="result-info">
+                                            <span class="result-source">[${chunk.source}]</span>
+                                            <span class="result-title">${chunk.title}</span>
+                                            <span class="result-score">${chunk.score}</span>
+                                        </div>
+                                    `;
+                                    searchResults.appendChild(resultDiv);
+                                } else if (chunk.type === 'search_completed') {
+                                    // Search completed
+                                    const statusDiv = answerContainer.querySelector('.search-status');
+                                    if (statusDiv) {
+                                        statusDiv.innerHTML = `<i class="fas fa-check text-success"></i> ${chunk.total_docs}개 문서 검색 완료 (${chunk.search_time}초)`;
+                                    }
+                                } else if (chunk.type === 'all_processes_start') {
+                                    // 4개 프로세스 시작
+                                    const processesDiv = document.createElement('div');
+                                    processesDiv.className = 'processes-container';
+                                    processesDiv.id = 'processes-container';
+                                    processesDiv.innerHTML = '<h5 class="processes-title">🔄 4개 프로세스 비동기 실행 중...</h5>';
+                                    answerContainer.appendChild(processesDiv);
+                                } else if (chunk.type === 'process_start') {
+                                    // 개별 프로세스 시작
+                                    let processesContainer = document.getElementById('processes-container');
+                                    if (!processesContainer) {
+                                        processesContainer = document.createElement('div');
+                                        processesContainer.className = 'processes-container';
+                                        processesContainer.id = 'processes-container';
+                                        answerContainer.appendChild(processesContainer);
+                                    }
+                                    
+                                    const processDiv = document.createElement('div');
+                                    processDiv.className = 'process-group';
+                                    processDiv.id = `process-${chunk.process_id}`;
+                                    processDiv.innerHTML = `
+                                        <h6 class="process-title">📋 ${chunk.process_name}</h6>
+                                        <div class="process-status">로딩 중...</div>
+                                    `;
+                                    processesContainer.appendChild(processDiv);
+                                } else if (chunk.type === 'process_complete') {
+                                    // 프로세스 완료 - 모든 순위 답변 표시
+                                    const processDiv = document.getElementById(`process-${chunk.process_id}`);
+                                    if (processDiv) {
+                                        // 로딩 상태 제거
+                                        const statusDiv = processDiv.querySelector('.process-status');
+                                        if (statusDiv) {
+                                            statusDiv.remove();
+                                        }
+                                        
+                                        // 제목에 완료 표시와 시간 정보 추가
+                                        const title = processDiv.querySelector('.process-title');
+                                        if (title) {
+                                            title.innerHTML += ` (응답 ${chunk.total_time}초, ${chunk.status === 'success' ? '성공' : '실패'}) ✅`;
+                                        }
+                                        
+                                        // LLM 응답 내용 표시
+                                        if (chunk.rank_answers && chunk.rank_answers.length > 0) {
+                                            const responseDiv = document.createElement('div');
+                                            responseDiv.className = 'llm-response';
+                                            responseDiv.innerHTML = '<h6>💬 응답 내용:</h6>';
+                                            
+                                            chunk.rank_answers.forEach(rankData => {
+                                                const answerDiv = document.createElement('div');
+                                                answerDiv.className = 'answer-section';
+                                                answerDiv.innerHTML = formatMarkdown(rankData.answer);
+                                                responseDiv.appendChild(answerDiv);
+                                            });
+                                            
+                                            processDiv.appendChild(responseDiv);
+                                        }
+                                        
+                                        // 유사도 Top 3 표시
+                                        if (chunk.similarity_info && chunk.similarity_info.length > 0) {
+                                            const similarityDiv = document.createElement('div');
+                                            similarityDiv.className = 'similarity-section';
+                                            similarityDiv.innerHTML = '<h6>🔍 유사도 Top 3</h6>';
+                                            
+                                            chunk.similarity_info.forEach(info => {
+                                                const simDiv = document.createElement('div');
+                                                simDiv.className = 'similarity-item';
+                                                simDiv.innerHTML = `
+                                                    <div class="similarity-header">
+                                                        <span class="similarity-rank">${info.rank}.</span>
+                                                        <span class="similarity-score">(유사도 ${info.score})</span>
+                                                        <span class="similarity-source">📄 ${info.source}</span>
+                                                    </div>
+                                                    <div class="similarity-content">${info.content_preview}</div>
+                                                `;
+                                                similarityDiv.appendChild(simDiv);
+                                            });
+                                            
+                                            processDiv.appendChild(similarityDiv);
+                                        }
+                                    }
+                                } else if (chunk.type === 'process_error') {
+                                    // 프로세스 오류
+                                    const processDiv = document.getElementById(`process-${chunk.process_id}`);
+                                    if (processDiv) {
+                                        const statusDiv = processDiv.querySelector('.process-status');
+                                        if (statusDiv) {
+                                            statusDiv.innerHTML = `<span class="error-message">❌ ${chunk.message || chunk.error}</span>`;
+                                        }
+                                        
+                                        const title = processDiv.querySelector('.process-title');
+                                        if (title) {
+                                            const timeInfo = chunk.total_time ? ` (응답 ${chunk.total_time}초, 실패)` : '';
+                                            title.innerHTML += `${timeInfo} ❌`;
+                                        }
+                                    }
+                                } else if (chunk.type === 'source_docs') {
+                                    // Add source documents
+                                    if (chunk.docs && chunk.docs.length > 0) {
+                                        const sourceDiv = document.createElement('div');
+                                        sourceDiv.className = 'source-doc mt-2';
+                                        sourceDiv.innerHTML = '<strong>📄 참고 문서:</strong><br>' + 
+                                            chunk.docs.map((doc, idx) => 
+                                                `${idx + 1}. ${doc.metadata?.source_file || doc.metadata?.title || 'Unknown'}`
+                                            ).join('<br>');
+                                        contentContainer.appendChild(sourceDiv);
+                                    }
+                                }
+                                
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                            } catch (e) {
+                                console.error('JSON 파싱 오류:', e);
+                            }
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('스트리밍 오류:', error);
+                // Fallback to regular query
+                const aiMessageContainer = document.getElementById(aiMessageId);
+                if (aiMessageContainer) {
+                    aiMessageContainer.remove();
+                }
+                await sendQuestionFallback(question, useMemory, llmModel, searchMode);
+            }
+        }
+
+        // Fallback function for non-streaming
+        async function sendQuestionFallback(question, useMemory, llmModel, searchMode) {
+            const chatContainer = document.getElementById('chatContainer');
+            
             try {
                 const response = await fetch('/api/chat/query', {
                     method: 'POST',
@@ -416,21 +1064,25 @@
                     body: JSON.stringify({ 
                         question: question,
                         use_memory: useMemory,
-                        llm_model: llmModel
+                        llm_model: llmModel,
+                        search_mode: searchMode
                     })
                 });
 
                 const data = await response.json();
                 
                 if (data.error) {
-                    chatContainer.innerHTML += `<div class="message ai-message">❌ 오류: ${data.error}</div>`;
+                    const errorTime = getCurrentTime();
+                    chatContainer.innerHTML += `<div class="message ai-message">❌ 오류: ${data.error}<div class="message-time">${errorTime}</div></div>`;
                 } else {
                     // Format the answer with markdown
-                    const formattedAnswer = formatMarkdown(data.answer);
+                    const formattedAnswer = formatMarkdown(data.answer || data.result);
+                    const aiTime = getCurrentTime();
                     let aiMessage = `<div class="message ai-message">${formattedAnswer}`;
                     
-                    // Add model info
-                    aiMessage += `<div class="mt-2"><small class="text-muted">🤖 Model: ${data.model_used || llmModel}</small></div>`;
+                    // Add model info with response time
+                    const responseTime = data.response_time ? ` (${data.response_time}초)` : '';
+                    aiMessage += `<div class="mt-2"><small class="text-muted">🤖 Model: ${data.model_used || llmModel}${responseTime}</small></div>`;
                     
                     // Add source documents if available
                     if (data.source_documents && data.source_documents.length > 0) {
@@ -441,11 +1093,12 @@
                         aiMessage += '</div>';
                     }
                     
-                    aiMessage += '</div>';
+                    aiMessage += `<div class="message-time">${aiTime}</div></div>`;
                     chatContainer.innerHTML += aiMessage;
                 }
             } catch (error) {
-                chatContainer.innerHTML += `<div class="message ai-message">❌ 오류: ${error.message}</div>`;
+                const errorTime = getCurrentTime();
+                chatContainer.innerHTML += `<div class="message ai-message">❌ 오류: ${error.message}<div class="message-time">${errorTime}</div></div>`;
             }
 
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -478,27 +1131,52 @@
                 return;
             }
 
+            const chunkingStrategy = document.getElementById('chunkingStrategy').value;
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('chunking_strategy', chunkingStrategy);
 
             try {
+                showProgress('업로드 시작...', 0);
+                
                 const response = await fetch('/api/document/upload', {
                     method: 'POST',
                     body: formData
                 });
 
+                showProgress('서버 처리 중...', 50);
                 const data = await response.json();
+                
                 if (data.error) {
+                    hideProgress();
                     alert(`업로드 실패: ${data.error}`);
                 } else {
-                    alert(`업로드 성공! ${data.chunks_created || 0}개의 청크가 생성되었습니다.`);
+                    showProgress('업로드 완료!', 100);
+                    
+                    const strategyText = getStrategyDisplayName(data.chunking_strategy || chunkingStrategy);
+                    alert(`업로드 성공!\n` +
+                          `청킹 전략: ${strategyText}\n` +
+                          `생성된 청크 수: ${data.chunks_created || 0}개\n` +
+                          `처리 시간: ${(data.processing_time || 0).toFixed(2)}초`);
+                    
                     fileInput.value = '';
                     loadDocumentList();
                     loadVectorDBInfo();
                 }
             } catch (error) {
+                hideProgress();
                 alert(`오류: ${error.message}`);
             }
+        }
+
+        function getStrategyDisplayName(strategy) {
+            const strategies = {
+                'basic': '기본 청킹',
+                'custom_delimiter': '커스텀 구분자 (/$$/ 기준)',
+                'semantic': '의미 기반 청킹',
+                'hybrid': '하이브리드 청킹'
+            };
+            return strategies[strategy] || strategy;
         }
 
         async function uploadText() {

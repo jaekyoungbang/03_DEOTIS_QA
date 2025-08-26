@@ -1,5 +1,6 @@
 from langchain_openai import OpenAIEmbeddings
 from config import Config
+import os
 
 class EmbeddingManager:
     def __init__(self):
@@ -8,6 +9,25 @@ class EmbeddingManager:
     
     def initialize_embeddings(self):
         """Initialize embedding model based on configuration"""
+        # Ollama BGE-M3 사용 시도 (기본값 true로 변경)
+        use_ollama_bge_m3 = os.getenv('USE_OLLAMA_BGE_M3', 'true').lower() == 'true'
+        
+        if use_ollama_bge_m3:
+            try:
+                from models.ollama_embeddings import OllamaEmbeddings
+                self.embeddings = OllamaEmbeddings(
+                    model="bge-m3:latest",
+                    base_url=os.getenv('OLLAMA_BASE_URL', 'http://192.168.0.224:11434')
+                )
+                # 연결 테스트
+                if self.embeddings.test_connection():
+                    print("✅ BGE-M3 임베딩 모델 사용 (192.168.0.224:11434)")
+                    return
+                else:
+                    print("⚠️ BGE-M3 연결 실패, OpenAI로 폴백")
+            except Exception as e:
+                print(f"⚠️ BGE-M3 로드 실패, OpenAI로 폴백: {e}")
+        
         if not Config.OPENAI_API_KEY:
             raise ValueError("OpenAI API key is required for embeddings")
         
@@ -29,7 +49,6 @@ class EmbeddingManager:
                 )
             except Exception as e2:
                 # Last resort - minimal parameters
-                import os
                 os.environ["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
                 self.embeddings = OpenAIEmbeddings(
                     model=embedding_config['model_name']
@@ -51,10 +70,19 @@ class EmbeddingManager:
     
     def get_embedding_info(self):
         """임베딩 모델 정보 반환"""
-        config = Config.EMBEDDING_MODELS['openai']
-        return {
-            'type': 'openai',
-            'model_name': config['model_name'],
-            'dimension': config['dimension'],
-            'status': 'ready' if self.embeddings else 'error'
-        }
+        if hasattr(self.embeddings, 'model') and 'bge-m3' in self.embeddings.model:
+            return {
+                'type': 'bge-m3',
+                'model_name': 'bge-m3:latest',
+                'dimension': 1024,
+                'server': '192.168.0.224:11434',
+                'status': 'ready' if self.embeddings else 'error'
+            }
+        else:
+            config = Config.EMBEDDING_MODELS['openai']
+            return {
+                'type': 'openai',
+                'model_name': config['model_name'],
+                'dimension': config['dimension'],
+                'status': 'ready' if self.embeddings else 'error'
+            }

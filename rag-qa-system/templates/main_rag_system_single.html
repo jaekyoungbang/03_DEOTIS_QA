@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 DEOTIS RAG Agent</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            min-height: calc(100vh - 200px);
+        }
+        
+        .welcome-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .welcome-features {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .chat-history {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            min-height: 400px;
+            max-height: 600px;
+        }
+        
+        .input-section {
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: none;
+            font-family: 'Noto Sans KR', sans-serif;
+            transition: border-color 0.3s;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .send-button {
+            padding: 1rem 1.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .qa-group {
+            margin-bottom: 2rem;
+        }
+        
+        .user-question {
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+        
+        .user-question-content {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 20px 4px 20px 20px;
+            max-width: 80%;
+            text-align: left;
+        }
+        
+        .ai-response {
+            background: #f8f9fa;
+            border-radius: 4px 20px 20px 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .ai-response-header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .model-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .ai-response-content {
+            padding: 1.5rem;
+        }
+        
+        .loading-container {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .response-content {
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .response-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .response-content th,
+        .response-content td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .response-content th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .response-meta {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .meta-item {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .meta-label {
+            font-weight: 500;
+        }
+        
+        .similarity-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .similarity-header {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        
+        .similarity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .similarity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .similarity-score {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 50px;
+        }
+        
+        .similarity-content {
+            flex: 1;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .error-content {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        
+        .error-suggestion {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .suggestion-questions {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .suggestion-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        
+        .suggestion-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .suggestion-item {
+            color: #667eea;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border: 1px solid #667eea;
+            border-radius: 20px;
+            transition: all 0.3s;
+            background: transparent;
+            font-size: 0.9rem;
+        }
+        
+        .suggestion-item:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🤖 DEOTIS RAG Agent</h1>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="welcome-section">
+            <div class="welcome-title">DEOTIS RAG Agent에 오신 것을 환영합니다!</div>
+            <div>AI가 내용을 분석하여 질문에 답변해드립니다.</div>
+            
+            <div class="welcome-features">
+                <div class="feature-item">
+                    <span>✅</span>
+                    <span>사전 등록된 문서 기반 답변</span>
+                </div>
+                <div class="feature-item">
+                    <span>🔍</span>
+                    <span>고급 의미 검색 기능</span>
+                </div>
+                <div class="feature-item">
+                    <span>🇰🇷</span>
+                    <span>한국어 특화 AI 모델</span>
+                </div>
+            </div>
+            
+            <div>시작하려면 아래에 질문을 입력하세요.</div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-history" id="chatHistory">
+                <div class="suggestion-questions">
+                    <div class="suggestion-title">💡 이런 질문은 어떠세요?</div>
+                    <div class="suggestion-list">
+                        <button class="suggestion-item" onclick="askSuggestedQuestion('신용카드 발급 절차는 어떻게 진행되며, 각 단계에서 무엇을 확인하나요?')">
+                            신용카드 발급 절차는 어떻게 진행되며, 각 단계에서 무엇을 확인하나요?
+                        </button>
+                        <button class="suggestion-item" onclick="askSuggestedQuestion('카드 발급이 가능합니다라는 안내를 받았어도 나중에 거절될 수 있다던데, 제가 알지 못하는 특별한 기준이 있나요?')">
+                            '카드 발급이 가능합니다'라는 안내를 받았어도 나중에 거절될 수 있다던데, 제가 알지 못하는 특별한 기준이 있나요?
+                        </button>
+                        <button class="suggestion-item" onclick="askSuggestedQuestion('신용카드 발급이 거절될 수 있는 주요 사유에는 어떤 것들이 있으며, 발급 불가 시 고객에게 어떻게 안내되나요?')">
+                            신용카드 발급이 거절될 수 있는 주요 사유에는 어떤 것들이 있으며, 발급 불가 시 고객에게 어떻게 안내되나요?
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <textarea 
+                        id="messageInput" 
+                        class="message-input" 
+                        placeholder="Ask about your documents..." 
+                        rows="2"
+                    ></textarea>
+                    <button id="sendBtn" class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 전역 변수
+        let isProcessing = false;
+        
+        // 스크롤을 맨 아래로
+        function scrollToBottom() {
+            const chatHistory = document.getElementById('chatHistory');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+        
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 텍스트 포맷팅 (마크다운 스타일)
+        function formatText(text) {
+            if (!text) return '';
+            
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^\d+\.\s(.+)$/gm, '<div style="margin: 5px 0;"><strong>$&</strong></div>')
+                .replace(/^[-•]\s(.+)$/gm, '<div style="margin: 3px 0; padding-left: 15px;">• $1</div>')
+                .replace(/\n/g, '<br>');
+        }
+        
+        // 추천 질문 클릭
+        function askSuggestedQuestion(question) {
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.value = question;
+                setTimeout(() => {
+                    sendMessage();
+                }, 100);
+            }
+        }
+        
+        // 단일 사용자 질문 표시
+        function displaySingleUserQuestion(question) {
+            const chatHistory = document.getElementById('chatHistory');
+            
+            // 추천 질문 숨기기
+            const suggestions = chatHistory.querySelector('.suggestion-questions');
+            if (suggestions) {
+                suggestions.style.display = 'none';
+            }
+            
+            // 새로운 QA 그룹 생성
+            const qaGroup = document.createElement('div');
+            qaGroup.className = 'qa-group';
+            
+            // 사용자 질문 추가
+            const userQuestion = document.createElement('div');
+            userQuestion.className = 'user-question';
+            
+            userQuestion.innerHTML = `
+                <div class="user-question-content">
+                    <div style="margin-bottom: 4px;"><strong>me:</strong> ${escapeHtml(question)}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.9;">
+                        <span style="margin-left: 8px; opacity: 0.7;">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                </div>
+            `;
+            qaGroup.appendChild(userQuestion);
+            
+            // AI 응답 로딩 카드
+            const aiResponse = document.createElement('div');
+            aiResponse.className = 'ai-response loading';
+            aiResponse.id = 'single-response';
+            aiResponse.innerHTML = `
+                <div class="ai-response-header">
+                    🤖 DEOTIS RAG Agent
+                    <span class="model-badge">ChatGPT-4o</span>
+                </div>
+                <div class="ai-response-content">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">AI가 문서를 검색하고 답변을 생성하고 있습니다...</div>
+                    </div>
+                </div>
+            `;
+            
+            qaGroup.appendChild(aiResponse);
+            chatHistory.appendChild(qaGroup);
+            
+            scrollToBottom();
+        }
+        
+        // 단일 쿼리 실행
+        async function executeSingleQuery(query) {
+            try {
+                console.log(`🚀 Executing single query: "${query}"`);
+                
+                const response = await fetch('/api/unified-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        mode: 'chatgpt-basic',
+                        summarize: false
+                    })
+                });
+                
+                console.log(`📡 Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log(`📄 Result:`, result);
+                
+                displaySingleResult(result);
+                
+            } catch (error) {
+                console.error('Query error:', error);
+                displaySingleError(error.message);
+            } finally {
+                // 입력 다시 활성화
+                isProcessing = false;
+                const input = document.getElementById('messageInput');
+                const btn = document.getElementById('sendBtn');
+                if (input) input.disabled = false;
+                if (btn) btn.disabled = false;
+            }
+        }
+        
+        // 단일 결과 표시
+        function displaySingleResult(result) {
+            const responseElement = document.getElementById('single-response');
+            if (!responseElement) return;
+            
+            responseElement.classList.remove('loading');
+            
+            const content = responseElement.querySelector('.ai-response-content');
+            if (!content) return;
+            
+            // 응답 내용 생성
+            let html = `
+                <div class="response-content">
+                    ${formatText(result.answer)}
+                </div>
+                <div class="response-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">모델:</span>
+                        <span class="meta-value">${result.model || 'ChatGPT API'}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">응답시간:</span>
+                        <span class="meta-value">${(result.response_time || 0).toFixed(2)}초</span>
+                    </div>
+                </div>
+            `;
+            
+            // 유사도 점수 추가
+            if (result.similarity_scores && result.similarity_scores.length > 0) {
+                html += `
+                    <div class="similarity-section">
+                        <div class="similarity-header">📊 문서 유사도 점수</div>
+                        <div class="similarity-list">
+                `;
+                
+                result.similarity_scores.slice(0, 3).forEach((sim, i) => {
+                    html += `
+                        <div class="similarity-item">
+                            <div class="similarity-score">${(sim.score * 100).toFixed(1)}%</div>
+                            <div class="similarity-content">${escapeHtml(sim.content_preview || sim.content || '내용 없음')}</div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            content.innerHTML = html;
+            scrollToBottom();
+        }
+        
+        // 단일 오류 표시
+        function displaySingleError(errorMessage) {
+            const responseElement = document.getElementById('single-response');
+            if (!responseElement) return;
+            
+            responseElement.classList.remove('loading');
+            
+            const content = responseElement.querySelector('.ai-response-content');
+            if (!content) return;
+            
+            content.innerHTML = `
+                <div class="error-content">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message">${escapeHtml(errorMessage)}</div>
+                    <div class="error-suggestion">
+                        잠시 후 다시 시도해주세요. 문제가 지속되면 관리자에게 문의하세요.
+                    </div>
+                </div>
+            `;
+            
+            scrollToBottom();
+        }
+        
+        // 메시지 전송
+        async function sendMessage() {
+            if (isProcessing) return;
+            
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            isProcessing = true;
+            
+            // 질문 표시
+            displaySingleUserQuestion(message);
+            
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            
+            // 단일 쿼리 실행
+            await executeSingleQuery(message);
+        }
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 페이지 로드 완료');
+            
+            // 전송 버튼 이벤트
+            const sendBtn = document.getElementById('sendBtn');
+            if (sendBtn) {
+                sendBtn.addEventListener('click', sendMessage);
+            }
+            
+            // 엔터키 이벤트
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        sendMessage();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

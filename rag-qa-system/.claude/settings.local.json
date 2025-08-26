@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(find:*)",
+      "Bash(head:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(mv:*)",
+      "Bash(ollama list:*)",
+      "Bash(docker:*)",
+      "Bash(systemctl status:*)",
+      "Bash(curl:*)",
+      "Bash(/usr/local/bin/ollama list:*)",
+      "Bash(wget:*)",
+      "Bash(pkill:*)",
+      "Bash(sudo rm:*)",
+      "Bash(grep:*)",
+      "Bash(true)",
+      "Bash(sudo python3:*)",
+      "Bash(touch:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(./start_local_llm.sh:*)",
+      "WebFetch(domain:deotis.me)",
+      "Bash(nvidia-smi:*)",
+      "Bash(export:*)",
+      "Bash(export USE_OLLAMA_BGE_M3=true)",
+      "Bash(./start_with_ollama.sh:*)"
+    ],
+    "deny": []
+  }
+}

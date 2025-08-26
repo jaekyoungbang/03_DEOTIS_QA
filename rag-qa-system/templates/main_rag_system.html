@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 DEOTIS RAG QA System - 통합 벤치마킹</title>
+    <title>DEOTIS RAG QA System - 통합 벤치마킹</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -59,87 +60,379 @@
         }
         
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
+            display: flex;
+            height: calc(100vh - 80px);
+            margin: 0;
+            padding: 0;
         }
         
-        /* 벤치마킹 모드 선택 */
-        .benchmark-selector {
+        /* 사이드바 */
+        .sidebar {
+            width: 300px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
         }
         
-        .benchmark-selector h2 {
-            text-align: center;
-            margin-bottom: 2rem;
-            color: #2c3e50;
+        /* 메인 컨텐츠 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
-        .benchmark-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .benchmark-card {
-            background: white;
-            border: 3px solid #e0e0e0;
-            border-radius: 12px;
+        /* 사이드바 컨텐츠 */
+        .sidebar-header {
             padding: 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
+            border-bottom: 1px solid #e0e0e0;
+            background: #2c3e50;
+            color: white;
         }
         
-        .benchmark-card:hover {
-            border-color: #3498db;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
         }
         
-        .benchmark-card.selected {
-            border-color: #27ae60;
-            background: #f0f8f0;
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
         }
         
-        .benchmark-card .icon {
-            font-size: 3rem;
+        .new-chat-section {
             margin-bottom: 1rem;
         }
         
-        .benchmark-card h3 {
-            margin-bottom: 0.5rem;
-            color: #2c3e50;
+        .new-chat-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
         
-        .benchmark-card p {
-            color: #666;
+        .new-chat-btn:hover {
+            background: #219a52;
+        }
+        
+        .delete-history-btn {
+            width: 100%;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
             font-size: 0.9rem;
-            line-height: 1.4;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
         }
         
-        .benchmark-card .specs {
-            margin-top: 1rem;
+        .delete-history-btn:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+        }
+        
+        .delete-history-btn:active {
+            transform: translateY(0);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .chat-history-section {
+            margin-top: 1.5rem;
+        }
+        
+        .history-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .history-list-sidebar {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .history-item-sidebar {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        
+        .history-item-sidebar:hover {
+            background: #e3f2fd;
+            border-left-color: #3498db;
+        }
+        
+        .history-item-sidebar.active {
+            background: #e8f5e8;
+            border-left-color: #27ae60;
+        }
+        
+        .history-question {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+        }
+        
+        .history-meta {
+            font-size: 0.75rem;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* 시스템 정보 (간소화) */
+        .system-info {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .system-info h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        
+        .info-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .info-badge {
+            padding: 0.25rem 0.75rem;
+            background: #e8f4f8;
+            color: #2c3e50;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            border: 1px solid #3498db;
+        }
+        
+        /* 채팅 입력 영역 */
+        .chat-input-area {
+            padding: 1.5rem;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        /* 결과 그리드 영역 */
+        .results-area {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        
+        .results-grid-realtime {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 1rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            opacity: 1;
+            min-height: 300px;
+            font-size: 0.9rem;
+            transform: translateY(0);
+            transition: all 0.5s ease;
+            display: block;
+            visibility: visible;
+        }
+        
+        .result-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .result-card.loading {
+            opacity: 0.7;
+        }
+        
+        .result-card-header {
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-card-title {
+            margin: 0;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .similarity-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .result-card-content {
+            padding: 1rem;
+        }
+        
+        .answer-text {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: #666;
             padding-top: 1rem;
             border-top: 1px solid #eee;
-            font-size: 0.8rem;
-            color: #888;
         }
         
-        /* 채팅 인터페이스 */
-        .chat-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+        .result-meta span {
+            background: #f8f9fa;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .result-meta span.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .result-meta span.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .loading-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            overflow: hidden;
+            border: 2px dashed #ddd;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+        
+        .low-similarity-card {
+            background: #fff3cd !important;
+            border: 2px solid #ffeaa7 !important;
+            opacity: 1 !important;
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        .low-similarity-header {
+            background: #ffeaa7;
+            color: #856404;
+        }
+        
+        .question-confirm {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .question-confirm h4 {
+            margin-bottom: 1rem;
+            color: #856404;
+        }
+        
+        .confirm-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .confirm-btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .confirm-btn.yes {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .confirm-btn.yes:hover {
+            background: #219a52;
+        }
+        
+        .confirm-btn.no {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .confirm-btn.no:hover {
+            background: #c0392b;
         }
         
         .chat-header {
@@ -151,8 +444,85 @@
             align-items: center;
         }
         
+        .chat-title-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
         .chat-header h3 {
             margin: 0;
+        }
+        
+        .chat-history-dropdown {
+            position: relative;
+        }
+        
+        .history-btn {
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.3s;
+        }
+        
+        .history-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .history-list {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .history-list.show {
+            display: block;
+        }
+        
+        .history-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            color: #333;
+            transition: background 0.3s;
+        }
+        
+        .history-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-question {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .history-date {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .history-empty {
+            padding: 1rem;
+            text-align: center;
+            color: #666;
+            font-style: italic;
         }
         
         .new-chat-btn {
@@ -231,23 +601,53 @@
         }
         
         .similarity-option {
-            padding: 0.5rem;
-            margin: 0.25rem 0;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
             background: white;
             border: 1px solid #dee2e6;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
         .similarity-option:hover {
             background: #f8f9fa;
+            border-color: #3498db;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .similarity-option:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .low-similarity-card {
+            border-left: 4px solid #f39c12;
+        }
+        
+        .low-similarity-header {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
         }
         
         /* 채팅 입력 */
         .chat-input-container {
             padding: 1rem 1.5rem;
             border-top: 1px solid #eee;
+        }
+        
+        .chat-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .summarize-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .chat-options {
@@ -270,9 +670,9 @@
         
         .chat-input input {
             flex: 1;
-            padding: 0.75rem;
+            padding: 1rem;
             border: 2px solid #e0e0e0;
-            border-radius: 25px;
+            border-radius: 12px;
             font-size: 1rem;
             outline: none;
             transition: border-color 0.3s;
@@ -280,26 +680,32 @@
         
         .chat-input input:focus {
             border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
         
         .send-btn {
-            padding: 0.75rem 1.5rem;
-            background: #27ae60;
+            padding: 1rem 2rem;
+            background: #3498db;
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 1rem;
-            transition: background 0.3s;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .send-btn:hover {
-            background: #219a52;
+            background: #2980b9;
+            transform: translateY(-1px);
         }
         
         .send-btn:disabled {
             background: #95a5a6;
             cursor: not-allowed;
+            transform: none;
         }
         
         /* 벤치마킹 결과 */
@@ -457,6 +863,28 @@
             border-color: #e74c3c;
             background: #ffebee;
         }
+
+        /* 초기화 단계 스타일 */
+        .init-step {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 1rem;
+            border-left: 4px solid #007bff;
+        }
+
+        .init-step i {
+            margin-right: 0.8rem;
+            width: 20px;
+            color: #007bff;
+        }
+
+        .init-step i.fa-check-circle {
+            color: #28a745 !important;
+        }
         
         /* 로딩 상태 */
         .loading {
@@ -480,14 +908,165 @@
             100% { transform: rotate(360deg); }
         }
         
+        .process-loading-spinner {
+            width: 60px !important;
+            height: 60px !important;
+            min-width: 60px !important;
+            min-height: 60px !important;
+            border: 6px solid rgba(102, 126, 234, 0.2) !important;
+            border-top: 6px solid #667eea !important;
+            border-right: 6px solid #764ba2 !important;
+            border-radius: 50% !important;
+            animation: spin 1.2s linear infinite !important;
+            margin: 20px auto !important;
+            display: block !important;
+            position: relative !important;
+            z-index: 10 !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            box-sizing: border-box !important;
+            flex-shrink: 0 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        /* 기본 스피너가 안보일 때 대체용 */
+        .process-loading-spinner::before {
+            content: "⏳";
+            font-size: 24px !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            animation: bounce 1s infinite !important;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translate(-50%, -50%) translateY(0); }
+            40% { transform: translate(-50%, -50%) translateY(-10px); }
+            60% { transform: translate(-50%, -50%) translateY(-5px); }
+        }
+        
+        /* 강력한 애니메이션 키프레임 */
+        @keyframes spin {
+            0% { 
+                transform: rotate(0deg) !important; 
+                border-top-color: #667eea !important;
+            }
+            25% { 
+                transform: rotate(90deg) !important; 
+                border-top-color: #764ba2 !important;
+            }
+            50% { 
+                transform: rotate(180deg) !important; 
+                border-top-color: #667eea !important;
+            }
+            75% { 
+                transform: rotate(270deg) !important; 
+                border-top-color: #764ba2 !important;
+            }
+            100% { 
+                transform: rotate(360deg) !important; 
+                border-top-color: #667eea !important;
+            }
+        }
+        
+        /* 로딩 컨테이너 스타일 강화 */
+        .loading-container {
+            text-align: center !important;
+            padding: 40px 20px !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+            border: 2px solid rgba(102, 126, 234, 0.3) !important;
+            border-radius: 12px !important;
+            min-height: 180px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            position: relative !important;
+            z-index: 1 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        }
+        
+        /* 프로세스 카드 로딩 상태 */
+        .process-card.loading {
+            opacity: 1 !important;
+            border-left: 4px solid #007bff !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+        }
+        
+        .process-card-body.loading {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 120px !important;
+        }
+        
+        /* 프로세스 카드 대기 상태 */
+        .process-card.waiting {
+            opacity: 0.6 !important;
+            border-left: 4px solid #ffa500 !important;
+            background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%) !important;
+        }
+        
+        .process-card-body.waiting {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 120px !important;
+            flex-direction: column;
+        }
+        
+        .waiting-icon {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* 프로세스 카드 성공 상태 */
+        .process-card.success {
+            border-left: 4px solid #28a745 !important;
+            background: linear-gradient(135deg, #f8fff9 0%, #e6ffed 100%) !important;
+        }
+        
+        /* 프로세스 카드 에러 상태 */
+        .process-card.error {
+            border-left: 4px solid #dc3545 !important;
+            background: linear-gradient(135deg, #fff8f8 0%, #ffeded 100%) !important;
+        }
+        
+        /* 로딩 점들 애니메이션 */
+        .loading-dots span {
+            animation: blink 1.4s infinite both;
+            font-size: 1.2em;
+            margin: 0 2px;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: 0s; }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0.3; }
+            40% { opacity: 1; }
+        }
+        
         /* 반응형 */
         @media (max-width: 768px) {
-            .benchmark-grid {
-                grid-template-columns: 1fr;
+            .info-cards {
+                grid-template-columns: repeat(2, 1fr);
             }
             
             .results-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .results-grid-realtime {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.8rem;
             }
             
             .metrics-grid {
@@ -498,103 +1077,486 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+            
+            .history-list {
+                min-width: 250px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid-realtime {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                max-width: 100%;
+            }
+        }
+        
+        /* 프로세스 카드 헤더 (가로 배열) */
+        .process-cards-header {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .process-card {
+            background: white !important;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #dee2e6 !important;
+            overflow: hidden;
+            min-height: auto;
+            transition: all 0.3s ease;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+        
+        /* 중복 제거됨 - 위에서 정의함 */
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .card-content {
+            padding: 1rem;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .card-content.waiting {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .card-content.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #007bff;
+        }
+        
+        .card-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* 질문 표시 영역 */
+        .question-display-area {
+            padding: 1rem 1.5rem;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        /* 하단 입력창 고정 */
+        .chat-input-area-fixed {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* 유사도 정보 스타일 */
+        .similarity-info {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(0,123,255,0.1);
+            border-radius: 8px;
+            border-left: 3px solid #007bff;
+        }
+        
+        .similarity-title {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .similarity-item {
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(0,123,255,0.2);
+            padding-bottom: 0.5rem;
+        }
+        
+        .similarity-rank {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+        
+        .similarity-content {
+            color: #6c757d;
+            font-size: 0.8rem;
+            line-height: 1.3;
+        }
+        
+        .card-meta {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: rgba(40,167,69,0.1);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        
+        .card-meta.error {
+            background: rgba(220,53,69,0.1);
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: bold;
+        }
+        
+        .status-badge.success {
+            color: #28a745;
+        }
+        
+        .status-badge.error {
+            color: #dc3545;
+        }
+        
+        .time-badge {
+            color: #6c757d;
+            font-weight: bold;
+        }
+        
+        /* 반응형 카드 레이아웃 */
+        @media (max-width: 1200px) {
+            .process-cards-header {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .process-cards-header {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .card-header {
+                font-size: 0.8rem;
+                padding: 0.5rem;
+            }
+        }
+        
+        /* 채팅 히스토리 영역 */
+        .chat-history-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+        
+        /* 질문-답변 그룹 */
+        .qa-group {
+            margin-bottom: 2rem;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+        
+        /* 사용자 질문 (오른쪽 정렬) */
+        .user-question {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+        
+        .user-question-content {
+            max-width: 70%;
+            background: #007bff;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 18px;
+            border-bottom-right-radius: 4px;
+            font-size: 1rem;
+            word-wrap: break-word;
+        }
+        
+        /* 4개 프로세스 카드 그룹 (가로 1줄) */
+        .process-cards-group {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+            opacity: 1 !important;
+            visibility: visible !important;
+            min-height: 250px; /* 최소 높이 보장 */
+        }
+        
+        /* 개별 프로세스 카드 */
+        .process-card {
+            background: white !important;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #dee2e6 !important;
+            overflow: hidden;
+            min-height: auto;
+            transition: all 0.3s ease;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+        
+        /* 중복 제거됨 - 위에서 정의함 */
+        
+        .process-card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .process-card-body {
+            padding: 0.75rem;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .process-card-body.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #007bff;
+        }
+        
+        /* 로딩 스피너 스타일 - 중복 제거됨 */
+        
+        /* 대체 로딩 애니메이션 (점 3개) */
+        .loading-dots {
+            display: inline-flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background-color: #667eea;
+            border-radius: 50%;
+            animation: pulse 1.4s ease-in-out infinite;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes pulse {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+        
+        /* 로딩 진행 텍스트 */
+        .loading-progress {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        /* 로딩 시간 표시 */
+        .loading-timer {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.25rem;
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .process-cards-group {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .user-question-content {
+                max-width: 85%;
+            }
+            
+            .process-cards-group {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .process-card-header {
+                font-size: 0.8rem;
+                padding: 0.5rem;
+            }
+            
+            .process-card-body {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
-            <h1>🤖 DEOTIS RAG QA System</h1>
+            <h1>DEOTIS RAG QA System</h1>
             <button class="admin-btn" onclick="showAdminPanel()">
-                <i class="fas fa-cog"></i> 관리자
+                <i class="fas fa-cog"></i> 시스템 관리
             </button>
         </div>
     </div>
     
     <div class="container">
-        <!-- 벤치마킹 모드 선택 -->
-        <div class="benchmark-selector">
-            <h2>🎯 벤치마킹 모드 선택</h2>
-            <div class="benchmark-grid">
-                <div class="benchmark-card" data-mode="chatgpt-basic" onclick="selectBenchmark('chatgpt-basic')">
-                    <div class="icon">📡</div>
-                    <h3>ChatGPT + 기본 청킹</h3>
-                    <p>OpenAI GPT API를 사용하여 기본 청킹 전략(1000자/200자 중첩)으로 처리</p>
-                    <div class="specs">
-                        Model: GPT-3.5 Turbo | Chunk: 1000/200 | Type: API
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>💬 DEOTIS RAG</h2>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- 새 채팅 버튼 -->
+                <div class="new-chat-section">
+                    <button class="new-chat-btn" onclick="newChat()">
+                        <i class="fas fa-plus"></i>
+                        새 채팅 시작
+                    </button>
+                    
+                    <!-- 채팅 목록 삭제 버튼 -->
+                    <button class="delete-history-btn" onclick="clearChatHistory()" title="모든 채팅 기록 삭제">
+                        <i class="fas fa-trash-alt"></i>
+                        채팅 기록 삭제
+                    </button>
+                </div>
+                
+                <!-- 시스템 정보 -->
+                <div class="system-info">
+                    <h3>🎯 4가지 비교 분석</h3>
+                    <div class="info-badges">
+                        <span class="info-badge">📡 ChatGPT 기본</span>
+                        <span class="info-badge">🎨 ChatGPT 커스텀</span>
+                        <span class="info-badge">🏠 로컬 기본</span>
+                        <span class="info-badge">🏗️ 로컬 커스텀</span>
                     </div>
                 </div>
                 
-                <div class="benchmark-card" data-mode="chatgpt-custom" onclick="selectBenchmark('chatgpt-custom')">
-                    <div class="icon">🎨</div>
-                    <h3>ChatGPT + 커스텀 청킹</h3>
-                    <p>OpenAI GPT API를 사용하여 사용자 지정 구분자 기반 청킹으로 처리</p>
-                    <div class="specs">
-                        Model: GPT-3.5 Turbo | Chunk: Custom | Type: API
-                    </div>
-                </div>
-                
-                <div class="benchmark-card" data-mode="local-basic" onclick="selectBenchmark('local-basic')">
-                    <div class="icon">🏠</div>
-                    <h3>로컬 LLM + 기본 청킹</h3>
-                    <p>로컬 LLaMA 모델을 사용하여 기본 청킹 전략(1000자/200자 중첩)으로 처리</p>
-                    <div class="specs">
-                        Model: LLaMA 3.2 | Chunk: 1000/200 | Type: Local
-                    </div>
-                </div>
-                
-                <div class="benchmark-card" data-mode="local-custom" onclick="selectBenchmark('local-custom')">
-                    <div class="icon">🏗️</div>
-                    <h3>로컬 LLM + 커스텀 청킹</h3>
-                    <p>로컬 LLaMA 모델을 사용하여 사용자 지정 구분자 기반 청킹으로 처리</p>
-                    <div class="specs">
-                        Model: LLaMA 3.2 | Chunk: Custom | Type: Local
+                <!-- 채팅 히스토리 -->
+                <div class="chat-history-section">
+                    <div class="history-title">채팅 기록</div>
+                    <div class="history-list-sidebar" id="historySidebar">
+                        <div style="text-align: center; color: #666; font-style: italic; padding: 1rem;">
+                            채팅 기록이 없습니다
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- 채팅 인터페이스 -->
-        <div class="chat-container">
-            <div class="chat-header">
-                <h3 id="chatTitle">채팅을 시작하려면 벤치마킹 모드를 선택하세요</h3>
-                <button class="new-chat-btn" onclick="newChat()">
-                    <i class="fas fa-plus"></i> 새 채팅
-                </button>
-            </div>
-            
-            <div class="chat-messages" id="chatMessages">
-                <div style="text-align: center; padding: 2rem; color: #666;">
-                    벤치마킹 모드를 선택한 후 질문을 시작하세요.
-                </div>
-            </div>
-            
-            <div class="chat-input-container">
-                <div class="chat-options">
-                    <div class="summarize-option">
-                        <input type="checkbox" id="summarizeCheck">
-                        <label for="summarizeCheck">요약 정리</label>
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 채팅 히스토리 영역 -->
+            <div class="chat-history-area" id="chatHistory">
+                <div class="welcome-message">
+                    <div style="text-align: center; padding: 2rem; color: #666; background: #f8f9fa; border-radius: 12px; margin: 1rem;">
+                        <h3 style="margin-bottom: 1rem; color: #2c3e50;">💬 채팅 시작</h3>
+                        <p>질문을 입력하면 4개 프로세스에서 각각 답변을 제공합니다.</p>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
+                            <span class="info-badge">🏠 사내서버 vLLM+기본</span>
+                            <span class="info-badge">🔧 사내서버 vLLM+커스텀</span>
+                            <span class="info-badge">🤖 ChatGPT+기본</span>
+                            <span class="info-badge">🧠 ChatGPT+커스텀</span>
+                        </div>
                     </div>
-                    <span style="color: #666; font-size: 0.9rem;">체크하면 LLM이 응답을 요약하여 제공합니다</span>
                 </div>
-                
+            </div>
+            
+            <!-- 채팅 입력창 (하단 고정) -->
+            <div class="chat-input-area-fixed">
+                <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="summarizeCheck" style="margin: 0;" onchange="updateSummarizeMode()">
+                        <label for="summarizeCheck" style="font-size: 0.9rem; color: #495057; font-weight: 500; cursor: pointer;">
+                            📝 요약 모드 <span id="summarizeStatus" style="color: #6c757d; font-size: 0.8rem;">(상세 답변)</span>
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="localModelSelect" style="font-size: 0.9rem; color: #495057; font-weight: 500;">🤖 로컬 모델:</label>
+                        <select id="localModelSelect" style="padding: 0.3rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; background: white;">
+                            <option value="./models/kanana8b" selected>kanana8b (현재 서버 모델)</option>
+                            <option value="Qwen/Qwen3-32B-AWQ">Qwen/Qwen3-32B-AWQ</option>
+                            <option value="meta-llama/Llama-2-7b-chat-hf">Llama-2-7b-chat</option>
+                            <option value="microsoft/DialoGPT-medium">DialoGPT-medium</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="chat-input">
-                    <input type="text" id="messageInput" placeholder="질문을 입력하세요... (예: 장기카드대출이란?)" disabled>
-                    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                    <input type="text" id="messageInput" placeholder="질문을 입력하세요... (예: 연회비 납부)">
+                    <button class="send-btn" id="sendBtn">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
             </div>
-        </div>
         
-        <!-- 로딩 -->
-        <div class="loading" id="loadingIndicator">
-            <div class="spinner"></div>
-            <p id="loadingText">처리 중...</p>
+        <!-- 채팅 컨테이너 숨김 (카드 레이아웃 사용) -->
+        <div id="chatContainer" style="display: none;">
+            <div id="chatMessages" style="padding: 1rem;">
+                <!-- 사용하지 않음 -->
+            </div>
         </div>
-        
-        <!-- 벤치마킹 결과 -->
-        <div class="benchmark-results" id="benchmarkResults">
+
+        <!-- 기존 벤치마킹 결과 (숨김) -->
+        <div class="benchmark-results" id="benchmarkResults" style="display: none;">
             <div class="results-grid" id="resultsGrid">
                 <!-- 결과가 여기에 동적으로 추가됩니다 -->
             </div>
@@ -604,28 +1566,18 @@
     <!-- 관리자 패널 -->
     <div class="admin-panel" id="adminPanel">
         <div class="admin-content">
-            <h3>🔧 관리자 패널</h3>
-            <p>시스템 초기화 및 관리 기능</p>
+            <h3>🔧 시스템 관리</h3>
+            <p>시스템 초기화 및 문서 로드 기능</p>
             
             <div class="admin-actions">
-                <button class="admin-action-btn" onclick="adminAction('clear-redis')">
-                    <h4>🗑️ Redis 캐시 삭제</h4>
-                    <p>단기 캐시 데이터를 모두 삭제합니다</p>
+                <button class="admin-action-btn danger" onclick="initializeSystem()">
+                    <h4>🔄 전체 시스템 초기화</h4>
+                    <p>모든 데이터를 삭제하고 S3에서 문서를 다시 로드합니다</p>
                 </button>
                 
-                <button class="admin-action-btn" onclick="adminAction('clear-rdb')">
-                    <h4>🗄️ RDB 기록 삭제</h4>
-                    <p>장기 기록 데이터를 모두 삭제합니다</p>
-                </button>
-                
-                <button class="admin-action-btn danger" onclick="adminAction('clear-vectordb')">
-                    <h4>⚠️ 벡터DB 삭제</h4>
-                    <p>임베딩된 벡터 데이터를 모두 삭제합니다</p>
-                </button>
-                
-                <button class="admin-action-btn danger" onclick="adminAction('clear-all')">
-                    <h4>💣 전체 초기화</h4>
-                    <p>Redis, RDB, 벡터DB를 모두 삭제합니다 (문서 파일 제외)</p>
+                <button class="admin-action-btn" onclick="reloadDocuments()">
+                    <h4>📥 문서만 다시 로드</h4>
+                    <p>S3 폴더에서 문서를 다시 로드합니다 (기존 데이터 유지)</p>
                 </button>
             </div>
             
@@ -636,253 +1588,1814 @@
             </div>
         </div>
     </div>
+
+    <!-- 초기화 진행 팝업 -->
+    <div class="admin-panel" id="initializationPopup" style="display: none;">
+        <div class="admin-content" style="max-width: 600px;">
+            <h3>🔄 시스템 초기화 중...</h3>
+            <div id="initializationStatus">
+                <div class="init-step" id="step1">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>모든 데이터 삭제 중...</span>
+                </div>
+                <div class="init-step" id="step2" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>S3 폴더에서 문서 로드 중...</span>
+                </div>
+                <div class="init-step" id="step3" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>벡터 임베딩 생성 중...</span>
+                </div>
+                <div class="init-step" id="stepComplete" style="display: none;">
+                    <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                    <span>초기화 완료! 채팅을 시작할 수 있습니다.</span>
+                </div>
+            </div>
+            
+            <div id="initializationResult" style="display: none; margin-top: 1rem; text-align: center;">
+                <button onclick="closeInitializationPopup()" style="padding: 0.8rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                    채팅 시작하기
+                </button>
+            </div>
+        </div>
+    </div>
     
     <script>
-        let currentMode = null;
-        let chatHistory = [];
+        let currentQuery = '';
+        let resultCount = 0;
+        // chatSessions 초기화 시 타입 체크
+        let storedSessions = localStorage.getItem('chatSessions');
+        let chatSessions = [];
+        try {
+            if (storedSessions) {
+                const parsed = JSON.parse(storedSessions);
+                // 배열인지 확인
+                if (Array.isArray(parsed)) {
+                    chatSessions = parsed;
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    // 객체인 경우 배열로 변환
+                    chatSessions = Object.values(parsed);
+                }
+            }
+        } catch (e) {
+            console.error('chatSessions 파싱 오류:', e);
+            chatSessions = [];
+        }
+        let currentSessionId = null;
+        let similarityData = {};
+        let processTimers = {}; // 각 프로세스별 타이머 저장
+        let timerIntervals = {}; // 타이머 인터벌 ID 저장
         
-        // 벤치마킹 모드 선택
-        function selectBenchmark(mode) {
-            currentMode = mode;
+        // 채팅 히스토리 토글
+        function toggleHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.classList.toggle('show');
             
-            // UI 업데이트
-            document.querySelectorAll('.benchmark-card').forEach(card => {
-                card.classList.remove('selected');
+            if (historyList.classList.contains('show')) {
+                updateHistoryList();
+            }
+        }
+        
+        // 히스토리 목록 업데이트
+        function updateHistoryList() {
+            const historyList = document.getElementById('historyList');
+            
+            if (chatSessions.length === 0) {
+                historyList.innerHTML = '<div class="history-empty">채팅 기록이 없습니다</div>';
+                return;
+            }
+            
+            historyList.innerHTML = chatSessions.map((session, index) => `
+                <div class="history-item" onclick="loadChatSession(${index})">
+                    <div class="history-question">${session.firstQuestion}</div>
+                    <div class="history-date">${new Date(session.timestamp).toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+        
+        // 채팅 세션 로드
+        function loadChatSession(index) {
+            const session = chatSessions[index];
+            currentSessionId = index;
+            chatHistory = session.messages;
+            
+            // 메시지 복원
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = '';
+            
+            chatHistory.forEach(msg => {
+                if (msg.type === 'user') {
+                    addMessage('user', msg.content);
+                } else if (msg.type === 'benchmark') {
+                    addMessage('bot', '4가지 방식의 답변을 확인하세요.');
+                    displayBenchmarkResults(msg.content);
+                }
             });
-            document.querySelector(`[data-mode="${mode}"]`).classList.add('selected');
             
-            // 채팅 활성화
-            document.getElementById('messageInput').disabled = false;
-            document.getElementById('sendBtn').disabled = false;
-            
-            // 타이틀 업데이트
-            const titles = {
-                'chatgpt-basic': '📡 ChatGPT + 기본 청킹',
-                'chatgpt-custom': '🎨 ChatGPT + 커스텀 청킹',
-                'local-basic': '🏠 로컬 LLM + 기본 청킹',
-                'local-custom': '🏗️ 로컬 LLM + 커스텀 청킹'
-            };
-            document.getElementById('chatTitle').textContent = titles[mode];
-            
-            // 새 채팅 시작
-            newChat();
+            // 히스토리 닫기
+            document.getElementById('historyList').classList.remove('show');
         }
         
         // 새 채팅
         function newChat() {
+            console.log('🔄 새 채팅 시작');
+            
             chatHistory = [];
-            document.getElementById('chatMessages').innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: #666;">
-                    새로운 채팅이 시작되었습니다. 질문을 입력하세요.
-                </div>
-            `;
-            document.getElementById('benchmarkResults').style.display = 'none';
+            currentSessionId = null;
+            
+            // 채팅 메시지 영역 초기화
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        🔄 새로운 채팅이 시작되었습니다. 질문을 입력하세요.
+                    </div>
+                    <div id="autoReloadPrompt" style="display: none; text-align: center; padding: 2rem; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; margin: 1rem;">
+                        <h4 style="color: #856404; margin-bottom: 1rem;">📂 시스템 초기화 필요</h4>
+                        <p style="color: #856404; margin-bottom: 1.5rem;">벡터 데이터베이스가 비어있습니다. 문서를 다시 로드해주세요.</p>
+                        <button onclick="autoLoadDocuments()" style="background: #28a745; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                            📥 S3 문서 자동 로드
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // 벤치마크 결과 숨기기
+            const benchmarkResults = document.getElementById('benchmarkResults');
+            if (benchmarkResults) {
+                benchmarkResults.style.display = 'none';
+            }
+            
+            // 결과 영역 초기화
+            const resultsGrid = document.getElementById('resultsGrid');
+            if (resultsGrid) {
+                resultsGrid.innerHTML = '';
+                console.log('✅ 결과 영역 초기화 완료');
+            }
+            
+            // 입력창 초기화 및 포커스
+            const questionInput = document.getElementById('questionInput');
+            if (questionInput) {
+                questionInput.value = '';
+                questionInput.focus();
+            }
+            
+            console.log('✅ 새 채팅 초기화 완료');
+            
+            // 시스템 상태 체크
+            checkSystemStatus();
         }
         
-        // 메시지 전송
-        async function sendMessage() {
+        // 시스템 상태 체크 함수
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/document/status');
+                const data = await response.json();
+                
+                // 벡터 DB가 비어있으면 자동 리로드 프롬프트 표시
+                if (data.total_documents === 0) {
+                    const autoReloadPrompt = document.getElementById('autoReloadPrompt');
+                    if (autoReloadPrompt) {
+                        autoReloadPrompt.style.display = 'block';
+                        console.log('⚠️ 벡터 DB 비어있음 - 자동 리로드 프롬프트 표시');
+                    }
+                }
+            } catch (error) {
+                console.log('시스템 상태 체크 실패:', error);
+            }
+        }
+        
+        // 자동 문서 로드 함수
+        async function autoLoadDocuments() {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            try {
+                button.textContent = '📥 로딩 중...';
+                button.disabled = true;
+                
+                const response = await fetch('/api/document/load-s3', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.documents_loaded) {
+                    // 성공 시 프롬프트 숨기기
+                    const autoReloadPrompt = document.getElementById('autoReloadPrompt');
+                    if (autoReloadPrompt) {
+                        autoReloadPrompt.style.display = 'none';
+                    }
+                    
+                    // 성공 메시지 표시
+                    alert(`✅ 문서 로드 완료!\n📄 ${data.documents_loaded}개 문서, ${data.total_chunks}개 청크가 로드되었습니다.`);
+                    console.log('✅ 자동 문서 로드 성공');
+                } else {
+                    alert('❌ 문서 로드 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+                
+            } catch (error) {
+                alert('❌ 문서 로드 중 오류 발생: ' + error.message);
+                console.error('자동 문서 로드 오류:', error);
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+        
+        // 채팅 기록 삭제 함수
+        function clearChatHistory() {
+            if (confirm('모든 채팅 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                // 로컬 스토리지에서 채팅 세션 삭제
+                localStorage.removeItem('chatSessions');
+                chatSessions = [];
+                
+                // 사이드바 히스토리 업데이트
+                updateSidebarHistory();
+                
+                // 현재 채팅도 초기화
+                newChat();
+                
+                // 성공 메시지 표시
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #27ae60;
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    animation: slideIn 0.3s ease;
+                `;
+                toast.innerHTML = '<i class="fas fa-check"></i> 모든 채팅 기록이 삭제되었습니다.';
+                
+                document.body.appendChild(toast);
+                
+                // 3초 후 토스트 제거
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 3000);
+            }
+        }
+        
+        // HTML 이스케이프 함수
+        function escapeHtml(text) {
+            if (text === '&nbsp;') return text;
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 요약 모드 상태 업데이트
+        function updateSummarizeMode() {
+            const checkbox = document.getElementById('summarizeCheck');
+            const status = document.getElementById('summarizeStatus');
+            
+            if (checkbox && status) {
+                if (checkbox.checked) {
+                    status.textContent = '(간결한 요약)';
+                    status.style.color = '#28a745';
+                    console.log('✅ 요약 모드 활성화: LLM이 간결한 요약 제공');
+                } else {
+                    status.textContent = '(상세 답변)';
+                    status.style.color = '#6c757d';
+                    console.log('📖 일반 모드: 검색된 내용 그대로 출력');
+                }
+            }
+        }
+        
+        // 텍스트 포맷팅 함수
+        function formatText(text) {
+            if (!text) return '';
+            
+            console.log('🔧 formatText input:', text.substring(0, 200) + '...');
+            
+            // 먼저 줄바꿈 정규화
+            let formatted = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            
+            // 1. 마크다운 테이블 검출 및 변환 (개선된 버전)
+            // 더 정확한 마크다운 테이블 검출: 연속된 | 라인들을 하나의 테이블로 인식
+            const markdownTableRegex = /((\|[^|\n]*)+\|[\s]*\n){2,}/g;
+            const markdownTables = formatted.match(markdownTableRegex);
+            
+            if (markdownTables) {
+                console.log('🔧 Found markdown tables:', markdownTables.length);
+                markdownTables.forEach((tableMatch, index) => {
+                    console.log(`🔧 Processing table ${index + 1}:`, tableMatch);
+                    const tableHtml = convertMarkdownTableToHTML(tableMatch);
+                    if (tableHtml) {
+                        console.log(`🔧 Table ${index + 1} converted to HTML`);
+                        formatted = formatted.replace(tableMatch, tableHtml);
+                    } else {
+                        console.log(`🔧 Table ${index + 1} failed to convert`);
+                    }
+                });
+            }
+            
+            // 2. 일반 텍스트 테이블 검출 (탭이나 여러 공백으로 구분, 또는 마크다운 잔여물)
+            const textTableRegex = /^([^\n]+\t[^\n]*\n)+/gm;
+            const textTables = formatted.match(textTableRegex);
+            
+            // 3. 마크다운 테이블 잔여물 검출 (| 가 있지만 완전한 마크다운이 아닌 경우)
+            const partialMarkdownTableRegex = /^[^|\n]*\|[^|\n]*\|[^|\n]*$/gm;
+            const partialTables = formatted.match(partialMarkdownTableRegex);
+            
+            // 4. 특별 케이스: 한국어 테이블 형식 (예: "결제일자    일시불/할부 이용기간    현금서비스 이용기간")
+            const koreanTablePattern = /^([가-힣\w\s/]+\s{4,}[가-힣\w\s/]+\s{4,}[가-힣\w\s/]+.*\n)+/gm;
+            const koreanTables = formatted.match(koreanTablePattern);
+            
+            if (textTables) {
+                textTables.forEach(tableMatch => {
+                    const tableHtml = convertTextTableToHTML(tableMatch);
+                    if (tableHtml) {
+                        formatted = formatted.replace(tableMatch, tableHtml);
+                    }
+                });
+            }
+            
+            // 부분 마크다운 테이블 처리
+            if (partialTables) {
+                partialTables.forEach(tableMatch => {
+                    const tableHtml = convertPartialMarkdownTableToHTML(tableMatch);
+                    if (tableHtml) {
+                        formatted = formatted.replace(tableMatch, tableHtml);
+                    }
+                });
+            }
+            
+            // 한국어 공백 기반 테이블 처리
+            if (koreanTables) {
+                koreanTables.forEach(tableMatch => {
+                    const tableHtml = convertKoreanSpaceTableToHTML(tableMatch);
+                    if (tableHtml) {
+                        formatted = formatted.replace(tableMatch, tableHtml);
+                    }
+                });
+            }
+            
+            // 5. 콜론으로 구분된 키-값 쌍 테이블 (예: "항목: 값" 형태)
+            const keyValueRegex = /^([^:\n]+:\s*[^\n]+\n){2,}/gm;
+            const keyValueTables = formatted.match(keyValueRegex);
+            
+            if (keyValueTables) {
+                keyValueTables.forEach(tableMatch => {
+                    const tableHtml = convertKeyValueToHTML(tableMatch);
+                    if (tableHtml) {
+                        formatted = formatted.replace(tableMatch, tableHtml);
+                    }
+                });
+            }
+            
+            // 기본 텍스트 포맷팅
+            formatted = formatted
+                // 테이블 구분선 제거 (독립적인 라인의 ---, ===, ... 패턴)
+                .replace(/^[\s]*[-=.+_*~:]{3,}[\s]*$/gm, '')
+                // 연속된 빈 줄 정리
+                .replace(/\n\s*\n\s*\n/g, '\n\n')
+                // 잘못된 백슬래시 이스케이프 수정
+                .replace(/\\(\d+)\./g, '$1.')
+                // 볼드 텍스트
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // 이탤릭 텍스트
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // 숫자 목록 개선 (단계별 절차 강조)
+                .replace(/^\d+\)\s(.+)$/gm, '<div style="margin: 10px 0; padding: 12px 16px; background: #f0f8ff; border-left: 4px solid #2196F3; border-radius: 6px;"><strong style="color: #1976D2;">$&</strong></div>')
+                .replace(/^\d+\.\s(.+)$/gm, '<div style="margin: 8px 0; padding: 10px 12px; background: #f8f9fa; border-left: 3px solid #667eea; border-radius: 4px;"><strong>$&</strong></div>')
+                // 불릿 목록 개선
+                .replace(/^[-•]\s(.+)$/gm, '<div style="margin: 5px 0; padding-left: 20px; color: #555;">• $1</div>')
+                // 중요 섹션 헤더 (** 로 둘러싸인 텍스트)
+                .replace(/\*\*([^*]+)\*\*:/g, '<div style="margin: 15px 0 8px 0; font-weight: 700; font-size: 1.1em; color: #2c3e50; border-bottom: 2px solid #e9ecef; padding-bottom: 4px;">$1:</div>')
+                // 줄바꿈을 <br>로 변환 (테이블 제외)
+                .replace(/\n/g, '<br>');
+            
+            console.log('🔧 formatText output:', formatted.substring(0, 500) + '...');
+            return formatted;
+        }
+        
+        // 마크다운 테이블을 HTML로 변환
+        function convertMarkdownTableToHTML(tableText) {
+            try {
+                const lines = tableText.trim().split('\n').filter(line => line.trim());
+                const tableRows = [];
+                let headerProcessed = false;
+                let maxColumns = 0;
+                
+                // 먼저 최대 열 수를 찾음
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.startsWith('|') && line.endsWith('|')) {
+                        if (!line.match(/^\|[\s\-:]+\|$/)) {
+                            const cells = line.slice(1, -1).split('|');
+                            maxColumns = Math.max(maxColumns, cells.length);
+                        }
+                    }
+                }
+                
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.startsWith('|') && line.endsWith('|')) {
+                        // 구분선 건너뛰기 - 더 강력한 패턴 (| ------ | 형태 처리)
+                        const cellsCheck = line.slice(1, -1).split('|');
+                        const isAllSeparators = cellsCheck.every(cell => {
+                            const trimmed = cell.trim();
+                            // 빈 셀이거나 구분선 문자들로만 이뤄진 셀인지 확인 (더 강화된 패턴)
+                            return trimmed === '' || /^[-=:+_*~.\s]{2,}$/.test(trimmed) || /^-{2,}$/.test(trimmed);
+                        });
+                        
+                        if (isAllSeparators) {
+                            console.log('🔧 Skipping table separator line:', line);
+                            continue;
+                        }
+                        
+                        // 셀 추출 및 빈 셀 처리
+                        let cells = line.slice(1, -1).split('|').map(cell => {
+                            const trimmed = cell.trim();
+                            // 구분선만 있는 셀 체크 (한글 텍스트 보호) - ------ 패턴 처리
+                            if (trimmed.match(/^[-=.+_*~:\s]{2,}$/) && trimmed.length > 0) {
+                                return '&nbsp;';
+                            }
+                            // ------ 같은 구분선 패턴 처리  
+                            if (/^-{2,}$/.test(trimmed)) {
+                                return '&nbsp;';
+                            }
+                            // 빈 셀 처리
+                            if (!trimmed) {
+                                return '&nbsp;';
+                            }
+                            return trimmed;
+                        });
+                        
+                        // 열 수 맞추기
+                        while (cells.length < maxColumns) {
+                            cells.push('&nbsp;');
+                        }
+                        
+                        if (cells.length > 0) {
+                            const tag = !headerProcessed ? 'th' : 'td';
+                            const rowClass = !headerProcessed ? 'header-row' : '';
+                            tableRows.push(`<tr class="${rowClass}">${cells.map(cell => `<${tag}>${cell === '&nbsp;' ? cell : escapeHtml(cell)}</${tag}>`).join('')}</tr>`);
+                            if (!headerProcessed) headerProcessed = true;
+                        }
+                    }
+                }
+                
+                if (tableRows.length > 0) {
+                    return createStyledTable(tableRows.join(''));
+                }
+            } catch (e) {
+                console.error('마크다운 테이블 변환 오류:', e);
+            }
+            return null;
+        }
+        
+        // 텍스트 테이블을 HTML로 변환 (탭 구분)
+        function convertTextTableToHTML(tableText) {
+            const lines = tableText.trim().split('\n').filter(line => line.trim());
+            if (lines.length < 2) return null;
+            
+            const tableRows = [];
+            let isFirstRow = true;
+            
+            for (let line of lines) {
+                const cells = line.split('\t').map(cell => cell.trim());
+                if (cells.length > 1) {
+                    const tag = isFirstRow ? 'th' : 'td';
+                    const rowClass = isFirstRow ? 'header-row' : '';
+                    tableRows.push(`<tr class="${rowClass}">${cells.map(cell => `<${tag}>${cell || '&nbsp;'}</${tag}>`).join('')}</tr>`);
+                    isFirstRow = false;
+                }
+            }
+            
+            if (tableRows.length > 0) {
+                return createStyledTable(tableRows.join(''));
+            }
+            return null;
+        }
+        
+        // 키-값 쌍을 HTML 테이블로 변환
+        function convertKeyValueToHTML(kvText) {
+            const lines = kvText.trim().split('\n').filter(line => line.trim());
+            if (lines.length < 2) return null;
+            
+            const tableRows = [];
+            
+            for (let line of lines) {
+                const colonIndex = line.indexOf(':');
+                if (colonIndex > 0) {
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    tableRows.push(`<tr><td class="key-cell"><strong>${key}</strong></td><td class="value-cell">${value}</td></tr>`);
+                }
+            }
+            
+            if (tableRows.length > 0) {
+                return createStyledTable(tableRows.join(''), true);
+            }
+            return null;
+        }
+        
+        // 한국어 공백 기반 테이블을 HTML로 변환
+        function convertKoreanSpaceTableToHTML(tableText) {
+            try {
+                const lines = tableText.trim().split('\n').filter(line => line.trim());
+                const tableRows = [];
+                
+                console.log('🔧 Processing Korean space table:', tableText.substring(0, 100));
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    // 4개 이상의 연속된 공백으로 컬럼 구분
+                    const cells = line.split(/\s{4,}/).map(cell => cell.trim()).filter(cell => cell.length > 0);
+                    
+                    if (cells.length >= 2) {
+                        const tag = i === 0 ? 'th' : 'td';
+                        const rowClass = i === 0 ? 'header-row' : '';
+                        tableRows.push(`<tr class="${rowClass}">${cells.map(cell => `<${tag}>${escapeHtml(cell)}</${tag}>`).join('')}</tr>`);
+                    }
+                }
+                
+                if (tableRows.length > 0) {
+                    return createStyledTable(tableRows.join(''));
+                }
+                
+            } catch (e) {
+                console.error('한국어 공백 테이블 변환 오류:', e);
+            }
+            return null;
+        }
+        
+        // 부분 마크다운 테이블을 HTML로 변환 (| 있지만 완전하지 않은 테이블)
+        function convertPartialMarkdownTableToHTML(tableText) {
+            try {
+                const line = tableText.trim();
+                console.log('🔧 Processing partial markdown table:', line);
+                
+                // | 기호로 분할
+                const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
+                
+                if (cells.length >= 2) {
+                    // 단일 행 테이블로 처리
+                    const tableRow = `<tr>${cells.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`;
+                    return createStyledTable(tableRow);
+                }
+                
+            } catch (e) {
+                console.error('부분 마크다운 테이블 변환 오류:', e);
+            }
+            return null;
+        }
+        
+        // 스타일이 적용된 테이블 생성
+        function createStyledTable(tableBody, isKeyValue = false) {
+            const uniqueId = 'table_' + Math.random().toString(36).substr(2, 9);
+            console.log('🔧 Creating table with ID:', uniqueId);
+            console.log('🔧 Table body:', tableBody);
+            
+            // CSS를 동적으로 헤드에 추가
+            const style = document.createElement('style');
+            const keyValueStyle = isKeyValue ? `
+                #${uniqueId} .key-cell { 
+                    background-color: #f8f9fa !important; 
+                    font-weight: bold !important; 
+                    width: 30% !important; 
+                    color: #495057 !important;
+                }
+                #${uniqueId} .value-cell { 
+                    background-color: #ffffff !important; 
+                }` : '';
+                
+            style.textContent = `
+                #${uniqueId} {
+                    width: 100% !important;
+                    border-collapse: collapse !important;
+                    font-size: 0.85rem !important;
+                    border: 2px solid #dee2e6 !important;
+                    border-radius: 8px !important;
+                    overflow: hidden !important;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+                    table-layout: auto !important;
+                    margin: 0 !important;
+                }
+                
+                #${uniqueId} td, #${uniqueId} th { 
+                    border: 1px solid #dee2e6 !important; 
+                    padding: 8px 6px !important; 
+                    text-align: left !important; 
+                    vertical-align: top !important;
+                    word-wrap: break-word !important;
+                    word-break: break-word !important;
+                    max-width: none !important;
+                    white-space: normal !important;
+                }
+                
+                #${uniqueId} th, #${uniqueId} .header-row td { 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                    color: white !important; 
+                    font-weight: bold !important; 
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+                }
+                
+                #${uniqueId} tr:nth-child(even):not(.header-row) {
+                    background-color: #f8f9fa !important;
+                }
+                
+                #${uniqueId} tr:nth-child(odd):not(.header-row) {
+                    background-color: #ffffff !important;
+                }
+                
+                #${uniqueId} tr:hover:not(.header-row) {
+                    background-color: #e3f2fd !important;
+                    transition: background-color 0.2s ease !important;
+                }
+                
+                ${keyValueStyle}
+            `;
+            
+            // 헤드에 스타일 추가
+            document.head.appendChild(style);
+            
+            const finalHtml = `
+                <div style="margin: 15px 0; overflow-x: auto; width: 100%; clear: both;">
+                    <table id="${uniqueId}">
+                        ${tableBody}
+                    </table>
+                </div>
+            `;
+            
+            console.log('🔧 Final table HTML:', finalHtml.substring(0, 300) + '...');
+            return finalHtml;
+        }
+
+        // 실시간 메시지 전송
+        // 전역 함수로 정의
+        window.sendMessage = async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             
-            if (!message || !currentMode) return;
+            if (!message) return;
             
-            // 사용자 메시지 추가
-            addMessage('user', message);
+            // 이전 작업이 진행 중이면 경고 메시지
+            const isProcessing = document.querySelector('.process-card.loading, .process-card.waiting');
+            if (isProcessing) {
+                const userConfirm = confirm('이전 작업이 아직 진행 중입니다. \n새로운 질문을 시작하시겠습니까? (이전 작업은 취소됩니다)');
+                if (!userConfirm) {
+                    return;
+                }
+                
+                // 이전 작업 취소
+                console.log('📋 이전 작업 취소 및 새로운 질문 시작');
+                // 모든 타이머 중지
+                Object.keys(timerIntervals).forEach(timerId => {
+                    clearInterval(timerIntervals[timerId]);
+                });
+                timerIntervals = {};
+            }
+            
+            currentQuery = message;
+            resultCount = 0;
+            similarityData = {};
+            
+            // 질문 표시
+            displayUserQuestion(message);
+            
             input.value = '';
+            input.disabled = true;
+            document.getElementById('sendBtn').disabled = true;
             
-            // 로딩 시작
-            showLoading('답변을 생성하고 있습니다...');
+            // DOM 업데이트가 완료되도록 기다림 (카드들이 확실히 보이도록)
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => requestAnimationFrame(resolve));
             
             try {
-                const summarize = document.getElementById('summarizeCheck').checked;
+                const summarizeCheckbox = document.getElementById('summarizeCheck');
+                const summarize = summarizeCheckbox ? summarizeCheckbox.checked : false;
                 
-                // API 호출
-                const response = await fetch('/api/benchmark/unified-query', {
+                // 실시간 스트리밍 멀티 벤치마킹으로 4개 프로세스 처리
+                executeAllModesStream(message, summarize);
+                
+            } catch (error) {
+                console.error('전체 오류:', error);
+                displayGlobalError(`전체 오류: ${error.message}`);
+            } finally {
+                // 35초 후 입력 다시 활성화 (비상 상황용)
+                setTimeout(() => {
+                    if (input) input.disabled = false;
+                    const btn = document.getElementById('sendBtn');
+                    if (btn) btn.disabled = false;
+                    console.log('타임아웃으로 인한 입력 활성화');
+                }, 35000);
+            }
+        };
+        
+        // 개별 모드 실행 (개별 API 사용)
+        async function executeMode(mode, query, summarize, index) {
+            try {
+                console.log(`🚀 Executing mode: ${mode} with query: "${query}"`);
+                
+                // 모드별 API 엔드포인트 결정
+                let endpoint;
+                if (mode === 'chatgpt-basic') {
+                    endpoint = '/api/chat/chatgpt-basic';
+                } else if (mode === 'chatgpt-custom') {
+                    endpoint = '/api/chat/chatgpt-custom';
+                } else if (mode === 'local-basic') {
+                    endpoint = '/api/chat/local-basic';
+                } else if (mode === 'local-custom') {
+                    endpoint = '/api/chat/local-custom';
+                } else {
+                    displayError(mode, '알 수 없는 모드입니다.', index);
+                    return;
+                }
+                
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        query: message,
-                        mode: currentMode,
+                        question: query
+                    })
+                });
+                
+                console.log(`📡 Response status for ${mode}: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log(`📄 Result for ${mode}:`, result);
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                // 새로운 API 형식에 맞춰 결과 변환
+                const formattedResult = {
+                    type: 'single',
+                    success: result.success,
+                    answer: result.answer,
+                    similarity_info: result.similarity_info,
+                    total_time: result.total_time,
+                    process_name: result.process_name
+                };
+                
+                // 즉시 표시 (완료된 것부터 바로 표시)
+                displayResult(formattedResult, mode, index);
+                
+            } catch (error) {
+                console.error(`❌ Error executing ${mode}:`, error);
+                displayError(mode, error.message, index);
+            }
+        }
+        
+        // 스트리밍 API로 실시간 처리 (비활성화됨 - 순차 벤치마킹으로 대체)
+        async function executeStreamingQuery(query, summarize) {
+            console.error(`❌ [STREAMING_QUERY] 이 함수는 비활성화되어야 합니다! 순차 벤치마킹을 사용하세요.`);
+            console.error(`❌ executeStreamingQuery 호출됨, executeAllModes로 대체`);
+            
+            // 실시간 스트리밍으로 대체 실행
+            return executeAllModesStream(query, summarize);
+            
+            // 아래는 비활성화된 기존 코드
+            try {
+                console.log(`🚀 Starting streaming query: "${query}"`);
+                
+                // 타임아웃 설정 (60초로 증가)
+                window.streamTimeoutId = setTimeout(() => {
+                    console.error('⏱️ Timeout: No process_complete events received within 60 seconds');
+                    // 모든 로딩 중인 카드에 타임아웃 에러 표시
+                    const cardsGroup = document.getElementById(window.currentCardsGroupId);
+                    if (cardsGroup) {
+                        const loadingCards = cardsGroup.querySelectorAll('.process-card.loading');
+                        loadingCards.forEach((card) => {
+                            const mode = card.id.split('-')[1] + '-' + card.id.split('-')[2];
+                            displayError(mode, '응답 시간 초과 (60초). 백엔드 프로세스 오류가 발생했습니다.', 0);
+                        });
+                    }
+                }, 60000);
+                
+                console.log('🔗 Making request to /api/chat/stream...');
+                const response = await fetch('/api/chat/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: query,
+                        use_memory: false,
+                        llm_model: 'gpt-4o-mini',
                         summarize: summarize
                     })
                 });
                 
-                const result = await response.json();
+                console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Response error:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}${errorText ? ' - ' + errorText : ''}`);
+                }
                 
-                if (result.type === 'similarity_choice') {
-                    // 유사도 0.8 미만인 경우 선택 옵션 제공
-                    showSimilarityOptions(result.options);
-                } else {
-                    // 일반 응답 처리
-                    handleResponse(result);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                console.log('🎉 Stream completed');
+                                if (window.streamTimeoutId) {
+                                    clearTimeout(window.streamTimeoutId);
+                                }
+                                continue;
+                            }
+                            
+                            try {
+                                const event = JSON.parse(data);
+                                console.log('🔸 Raw event data:', data);
+                                console.log('🔹 Parsed event:', event);
+                                handleStreamEvent(event);
+                            } catch (e) {
+                                console.error('Failed to parse event:', e, 'Data:', data);
+                            }
+                        }
+                    }
                 }
                 
             } catch (error) {
-                addMessage('bot', `오류가 발생했습니다: ${error.message}`);
-            } finally {
-                hideLoading();
+                console.error('Streaming error:', error);
+                // 모든 프로세스에 오류 표시
+                displayGlobalError(error.message);
             }
         }
         
-        // 메시지 추가
-        function addMessage(type, content, meta = null) {
-            const messagesContainer = document.getElementById('chatMessages');
+        // 스트림 이벤트 처리
+        function handleStreamEvent(event) {
+            console.log('📥 Stream event:', event);
+            console.log('Event type:', event.type);
+            console.log('Process ID:', event.process_id);
+            console.log('Status:', event.status);
             
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.innerHTML = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
-            
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.innerHTML = content;
-            
-            if (meta) {
-                const metaDiv = document.createElement('div');
-                metaDiv.className = 'message-meta';
-                metaDiv.textContent = meta;
-                contentDiv.appendChild(metaDiv);
+            // process_start 이벤트는 무시 (이미 카드가 표시되어 있음)
+            if (event.type === 'all_processes_start' || event.type === 'process_start') {
+                console.log('✅ Process start event - already showing loading cards');
+                return;
             }
             
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(contentDiv);
-            
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            if (event.type === 'process_complete') {
+                console.log('✅ Process complete event received');
+                const mode = getProcessMode(event.process_id);
+                
+                // 사내서버 vLLM 프로세스도 정상 처리하도록 변경
+                console.log(`📨 프로세스 ${event.process_id} (${mode}) 이벤트:`, event.type);
+                
+                // ChatGPT 프로세스만 정상 처리
+                const result = {
+                    success: event.status === 'success',
+                    answer: event.rank_answers && event.rank_answers[0] ? event.rank_answers[0].answer : '답변 없음',
+                    similarity_info: event.similarity_info || [],
+                    total_time: event.total_time || 0,
+                    process_name: event.process_name,
+                    chunking_type: event.chunking_type  // chunking_type 추가
+                };
+                console.log('Calling displayResult with:', result, mode);
+                displayResult(result, mode, getCardIndex(event.process_id));
+                
+            } else if (event.type === 'process_error') {
+                console.log('❌ Process error event received');
+                console.log('Error details:', event);
+                // 프로세스 오류
+                const mode = getProcessMode(event.process_id);
+                console.log('Error mode:', mode, 'Message:', event.message || event.error);
+                displayError(mode, event.message || event.error || 'Unknown error', getCardIndex(event.process_id));
+                
+                // 타임아웃 클리어 (에러도 완료로 간주)
+                if (window.streamTimeoutId) {
+                    clearTimeout(window.streamTimeoutId);
+                }
+            } else {
+                console.log('⚠️ Unknown event type:', event.type);
+                // 디버깅을 위해 모든 이벤트 내용 표시
+                console.log('Full event:', JSON.stringify(event, null, 2));
+            }
         }
         
-        // 유사도 선택 옵션 표시
-        function showSimilarityOptions(options) {
-            const optionsHtml = `
-                <h4>🎯 유사도 기반 답변 선택</h4>
-                <p>다음 중 원하시는 답변을 선택해주세요:</p>
-                ${options.map((option, index) => `
-                    <div class="similarity-option" onclick="selectSimilarity(${index})">
-                        <strong>답변 ${index + 1}</strong> (유사도: ${(option.similarity * 100).toFixed(1)}%)
-                        <br><small>${option.preview}...</small>
+        // 프로세스 ID로 모드 결정 및 카드 인덱스 계산
+        function getProcessMode(processId) {
+            const modeMap = {
+                1: 'chatgpt-basic',   // 백엔드 프로세스 1 → 프론트엔드 카드 2
+                2: 'chatgpt-custom',  // 백엔드 프로세스 2 → 프론트엔드 카드 3  
+                3: 'local-basic',     // 백엔드 프로세스 3 → 프론트엔드 카드 0
+                4: 'local-custom'     // 백엔드 프로세스 4 → 프론트엔드 카드 1
+            };
+            return modeMap[processId] || 'unknown';
+        }
+        
+        // 프로세스 ID로 카드 인덱스 계산
+        function getCardIndex(processId) {
+            const indexMap = {
+                1: 2,  // ChatGPT + s3기본 → 카드 2
+                2: 3,  // ChatGPT + s3-chunking → 카드 3
+                3: 0,  // 사내서버 vLLM + s3기본 → 카드 0  
+                4: 1   // 사내서버 vLLM + s3-chunking → 카드 1
+            };
+            return indexMap[processId] || 0;
+        }
+        
+        // 단일 사용자 질문 표시
+        function displaySingleUserQuestion(question) {
+            const chatHistory = document.getElementById('chatHistory');
+            if (!chatHistory) return;
+            
+            // 새로운 QA 그룹 생성
+            const qaGroup = document.createElement('div');
+            qaGroup.className = 'qa-group';
+            
+            // 사용자 질문 추가 (오른쪽 정렬)
+            const userQuestion = document.createElement('div');
+            userQuestion.className = 'user-question';
+            const summarizeCheckbox = document.getElementById('summarizeCheck');
+            const isSummarizeMode = summarizeCheckbox ? summarizeCheckbox.checked : false;
+            
+            userQuestion.innerHTML = `
+                <div class="user-question-content">
+                    <div style="margin-bottom: 4px;"><strong>me:</strong> ${question}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.9;">
+                        ${isSummarizeMode ? 
+                            '<span style="background: rgba(40, 167, 69, 0.2); color: #28a745; padding: 2px 6px; border-radius: 3px;">📝 요약모드 ON</span>' : 
+                            '<span style="background: rgba(0, 123, 255, 0.2); color: #007bff; padding: 2px 6px; border-radius: 3px;">📖 일반모드</span>'
+                        }
+                        <span style="margin-left: 8px; opacity: 0.7;">${new Date().toLocaleTimeString()}</span>
                     </div>
-                `).join('')}
+                </div>
+            `;
+            qaGroup.appendChild(userQuestion);
+            
+            // AI 응답 로딩 카드
+            const aiResponse = document.createElement('div');
+            aiResponse.className = 'ai-response loading';
+            aiResponse.id = 'single-response';
+            aiResponse.innerHTML = `
+                <div class="ai-response-header">
+                    🤖 DEOTIS RAG Agent
+                    <span class="model-badge">ChatGPT-4o</span>
+                </div>
+                <div class="ai-response-content">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">AI가 문서를 검색하고 답변을 생성하고 있습니다...</div>
+                    </div>
+                </div>
             `;
             
-            addMessage('bot', `<div class="similarity-options">${optionsHtml}</div>`);
+            qaGroup.appendChild(aiResponse);
+            chatHistory.appendChild(qaGroup);
+            
+            // 스크롤을 맨 아래로
+            scrollToBottom();
         }
         
-        // 유사도 선택
-        async function selectSimilarity(index) {
-            showLoading('선택된 답변을 생성하고 있습니다...');
-            
+        // 스트리밍 멀티 벤치마킹
+        async function executeAllModesStream(query, summarize) {
             try {
-                const response = await fetch('/api/benchmark/similarity-choice', {
+                console.log(`🚀 Streaming all modes: "${query}"`);
+                
+                const requestBody = JSON.stringify({
+                    query: query,
+                    summarize: summarize,
+                    local_model: document.getElementById('localModelSelect').value
+                });
+                
+                const response = await fetch('/api/multi/multi-query-stream', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: requestBody
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleStreamEvent(data);
+                            } catch (e) {
+                                console.error('Stream parsing error:', e);
+                            }
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Streaming error:', error);
+                displayGlobalError(`스트리밍 오류: ${error.message}`);
+            }
+        }
+        
+        function handleStreamEvent(data) {
+            console.log('📦 Stream event:', data);
+            
+            switch (data.type) {
+                case 'phase_start':
+                    console.log(`🎯 Phase ${data.phase}:`, data.modes);
+                    break;
+                    
+                case 'result':
+                    console.log(`📊 ${data.mode} 완료`);
+                    const cardIndex = getCardIndexByMode(data.mode);
+                    displayResult(data.result.result, data.mode, cardIndex);
+                    break;
+                    
+                case 'complete':
+                    console.log('🎉 모든 모드 완료');
+                    setTimeout(() => {
+                        const input = document.getElementById('messageInput');
+                        const btn = document.getElementById('sendBtn');
+                        if (input) input.disabled = false;
+                        if (btn) btn.disabled = false;
+                    }, 500);
+                    break;
+                    
+                case 'error':
+                    displayGlobalError(data.message);
+                    break;
+            }
+        }
+        
+        function getCardIndexByMode(mode) {
+            const modeToCardIndex = {
+                'local-basic': 0,
+                'local-custom': 1,
+                'chatgpt-basic': 2, 
+                'chatgpt-custom': 3
+            };
+            return modeToCardIndex[mode] || 0;
+        }
+        
+        // 기존 배치 방식 (백업)
+        async function executeAllModes(query, summarize) {
+            try {
+                console.log(`\ud83d\ude80 Executing all modes with query: "${query}"`);
+                
+                // 스트리밍 API 호출로 변경
+                const response = await fetch('/api/multi/multi-query-stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
                     },
                     body: JSON.stringify({
-                        choice: index,
-                        mode: currentMode,
-                        summarize: document.getElementById('summarizeCheck').checked
+                        query: query,
+                        summarize: summarize,
+                        local_model: document.getElementById('localModelSelect').value
                     })
                 });
                 
-                const result = await response.json();
-                handleResponse(result);
+                console.log(`\ud83d\udce1 Multi-query response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`\ud83d\udcc4 Multi-query result:`, data);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // 각 모드에 대한 결과 처리
+                if (data.results && Array.isArray(data.results)) {
+                    data.results.forEach((modeResult, index) => {
+                        const mode = modeResult.mode;
+                        const result = modeResult.result;
+                        
+                        console.log(`\ud83d\udd04 Processing result for ${mode}:`, result);
+                        console.log(`[MODE DEBUG] Success: ${modeResult.success}, Error: ${modeResult.error}`);
+                        
+                        // 결과 표시
+                        displayResult(result, mode, index);
+                    });
+                    
+                    // 입력 다시 활성화
+                    setTimeout(() => {
+                        const input = document.getElementById('messageInput');
+                        const btn = document.getElementById('sendBtn');
+                        if (input) input.disabled = false;
+                        if (btn) btn.disabled = false;
+                        console.log('모든 결과 처리 완료 - 입력 활성화');
+                    }, 1000);
+                } else {
+                    throw new Error('비어있지 않거나 잘못된 결과 형식');
+                }
                 
             } catch (error) {
-                addMessage('bot', `오류가 발생했습니다: ${error.message}`);
-            } finally {
-                hideLoading();
+                console.error('Multi-query error:', error);
+                displayGlobalError(`\ubaa8든 모드 실행 중 오류: ${error.message}`);
             }
         }
         
-        // 응답 처리
-        function handleResponse(result) {
-            if (result.type === 'single') {
-                // 단일 모드 응답
-                const meta = `응답 시간: ${result.response_time?.toFixed(2)}초 | 모델: ${result.model}`;
-                addMessage('bot', result.answer, meta);
-                
-            } else if (result.type === 'benchmark') {
-                // 벤치마킹 모드 응답
-                addMessage('bot', '벤치마킹 결과가 생성되었습니다. 아래에서 확인하세요.');
-                displayBenchmarkResults(result);
-            }
+        // 모드 설정 가져오기 (통합)
+        function getModeConfig(mode) {
+            const modeConfigs = {
+                'chatgpt-basic': { 
+                    title: 'ChatGPT + s3기본', 
+                    type: 'api',
+                    priority: 1,
+                    description: 's3폴더 문서 (1000자/200중첩)'
+                },
+                'chatgpt-custom': { 
+                    title: 'ChatGPT + s3-chunking', 
+                    type: 'api',
+                    priority: 2,
+                    description: 's3-chunking폴더 문서 (커스텀 지식향상)'
+                },
+                'local-basic': { 
+                    title: '사내서버 vLLM + s3기본', 
+                    type: 'local',
+                    priority: 3,
+                    description: 's3폴더 문서 (Ollama LLaMA)'
+                },
+                'local-custom': { 
+                    title: '사내서버 vLLM + s3-chunking', 
+                    type: 'local',
+                    priority: 4,
+                    description: 's3-chunking폴더 문서 (Ollama+향상)'
+                }
+            };
+            return modeConfigs[mode] || { title: mode, type: 'unknown', priority: 0, description: '' };
         }
-        
-        // 벤치마킹 결과 표시
-        function displayBenchmarkResults(result) {
-            const resultsContainer = document.getElementById('benchmarkResults');
-            const resultsGrid = document.getElementById('resultsGrid');
-            
-            resultsGrid.innerHTML = '';
-            
-            // API 결과
-            if (result.api_result) {
-                resultsGrid.appendChild(createResultPanel('api', 'API LLM', result.api_result));
-            }
-            
-            // Local 결과
-            if (result.local_result) {
-                resultsGrid.appendChild(createResultPanel('local', 'Local LLM', result.local_result));
-            }
-            
-            resultsContainer.style.display = 'block';
+
+        // 로딩 카드 가져오기
+        function getLoadingCard(mode, index) {
+            return document.getElementById(`loading-${mode}`);
         }
-        
-        // 결과 패널 생성
-        function createResultPanel(type, title, data) {
-            const panel = document.createElement('div');
-            panel.className = `result-panel ${type}`;
+
+        // 사용자 질문과 4개 프로세스 카드 그룹 생성
+        function displayUserQuestion(question) {
+            const chatHistory = document.getElementById('chatHistory');
+            console.log('🔍 displayUserQuestion 호출, chatHistory:', chatHistory);
             
-            panel.innerHTML = `
-                <div class="panel-header">
-                    <h3 class="panel-title">${title}</h3>
+            if (!chatHistory) {
+                console.error('❌ chatHistory 요소를 찾을 수 없습니다!');
+                return;
+            }
+            
+            // 새로운 QA 그룹 생성
+            const qaGroup = document.createElement('div');
+            qaGroup.className = 'qa-group';
+            console.log('✅ QA 그룹 생성:', qaGroup);
+            
+            // 사용자 질문 추가 (오른쪽 정렬)
+            const userQuestion = document.createElement('div');
+            userQuestion.className = 'user-question';
+            const summarizeCheckbox = document.getElementById('summarizeCheck');
+            const isSummarizeMode = summarizeCheckbox ? summarizeCheckbox.checked : false;
+            
+            userQuestion.innerHTML = `
+                <div class="user-question-content">
+                    <div style="margin-bottom: 4px;"><strong>me:</strong> ${question}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.9;">
+                        ${isSummarizeMode ? 
+                            '<span style="background: rgba(40, 167, 69, 0.2); color: #28a745; padding: 2px 6px; border-radius: 3px;">📝 요약모드 ON</span>' : 
+                            '<span style="background: rgba(0, 123, 255, 0.2); color: #007bff; padding: 2px 6px; border-radius: 3px;">📖 일반모드</span>'
+                        }
+                        <span style="margin-left: 8px; opacity: 0.7;">${new Date().toLocaleTimeString()}</span>
+                    </div>
                 </div>
+            `;
+            qaGroup.appendChild(userQuestion);
+            
+            // 4개 프로세스 카드 그룹 생성 (가로 1줄)
+            const processCardsGroup = document.createElement('div');
+            processCardsGroup.className = 'process-cards-group';
+            processCardsGroup.id = `cards-group-${Date.now()}`; // 고유 ID
+            
+            const groupTimestamp = Date.now(); // 그룹별로 동일한 타임스탬프 사용
+            // 사용자 요청 순서: 🏠→🔧→🤖→🧠
+            const allProcesses = [
+                {key: 'local-basic', name: '사내서버 vLLM + s3기본', desc: '기본청킹전략(1000자/200중첩)', icon: '🏠', phase: 1, order: 1},
+                {key: 'local-custom', name: '사내서버 vLLM + s3-chunking', desc: '커스텀 청킹전략(향상된 지식)', icon: '🔧', phase: 2, order: 2},
+                {key: 'chatgpt-basic', name: 'ChatGPT + s3기본', desc: '기본청킹전략(1000자/200중첩)', icon: '🤖', phase: 1, order: 3},
+                {key: 'chatgpt-custom', name: 'ChatGPT + s3-chunking', desc: '커스텀 청킹전략(향상된 지식)', icon: '🧠', phase: 2, order: 4}
+            ];
+            
+            const phase1Processes = allProcesses.filter(p => p.phase === 1);
+            const phase2Processes = allProcesses.filter(p => p.phase === 2);
+            
+            // 순서대로 카드 생성
+            allProcesses.forEach(process => {
+                const processCard = document.createElement('div');
+                const isPhase1 = process.phase === 1;
                 
-                <div class="metrics-grid">
-                    <div class="metric">
-                        <div class="metric-label">응답 시간</div>
-                        <div class="metric-value">${data.response_time?.toFixed(2) || '-'}초</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">토큰 수</div>
-                        <div class="metric-value">${data.estimated_tokens || '-'}</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">점수</div>
-                        <div class="metric-value">${data.benchmark_score?.toFixed(1) || '-'}</div>
-                    </div>
-                </div>
+                processCard.className = isPhase1 ? 'process-card loading' : 'process-card waiting';
+                processCard.id = `card-${process.key}-${groupTimestamp}`;
                 
-                <div class="panel-content">
-                    <div class="answer-content">${data.answer || '응답 없음'}</div>
-                    
-                    <div class="source-info">
-                        <h4>📄 참조 문서</h4>
-                        <div class="source-list">
-                            ${data.sources?.join(', ') || '소스 정보 없음'}
+                console.log(`🔧 [PHASE ${process.phase}] 카드 생성: ${process.key}, ID: ${processCard.id}`);
+                
+                if (isPhase1) {
+                    // Phase 1 카드: 즉시 로딩 시작
+                    processCard.innerHTML = `
+                        <div class="process-card-header">
+                            ${process.icon} ${process.name}
                         </div>
+                        <div class="process-card-body loading">
+                            <div class="loading-container">
+                                <div class="process-loading-spinner"></div>
+                                <div class="loading-progress" style="margin-top: 15px; font-weight: 500; color: #495057;">
+                                    ⏳ AI가 문서를 검색중입니다...
+                                </div>
+                                <div class="loading-timer" id="timer-${process.key}-${groupTimestamp}" style="color: #6c757d; font-size: 0.85rem; margin-top: 8px;">0초 경과</div>
+                                <div class="loading-dots" style="margin-top: 10px; color: #667eea;">
+                                    <span>●</span><span>●</span><span>●</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Phase 2 카드: 대기 중
+                    processCard.innerHTML = `
+                        <div class="process-card-header">
+                            ${process.icon} ${process.name}
+                        </div>
+                        <div class="process-card-body waiting">
+                            <div class="waiting-container">
+                                <div class="waiting-icon" style="font-size: 2rem; color: #ffa500; text-align: center;">⏳</div>
+                                <div class="waiting-message" style="margin-top: 15px; font-weight: 500; color: #495057; text-align: center;">
+                                    이전 작업 종료 대기중...
+                                </div>
+                                <div class="waiting-timer" id="timer-${process.key}-${groupTimestamp}" style="color: #6c757d; font-size: 0.85rem; margin-top: 8px; text-align: center;">대기 중</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                processCardsGroup.appendChild(processCard);
+                console.log(`✅ 카드 추가됨: ${process.order}번 ${process.key}`);
+            });
+            
+            // Phase 1 카드들의 타이머 시작
+            phase1Processes.forEach(process => {
+                console.log(`⏱️ [PHASE 1] 타이머 시작: ${process.key}`);
+                startProcessTimer(process.key, groupTimestamp);
+            });
+            
+            qaGroup.appendChild(processCardsGroup);
+            chatHistory.appendChild(qaGroup);
+            console.log('🎯 QA 그룹이 chatHistory에 추가됨');
+            
+            // DOM 강제 리플로우 트리거
+            processCardsGroup.offsetHeight;
+            
+            // 현재 카드 그룹 ID를 전역 변수로 저장
+            window.currentCardsGroupId = processCardsGroup.id;
+            console.log('💾 현재 카드 그룹 ID 저장:', window.currentCardsGroupId);
+            
+            // 카드들이 제대로 표시되는지 확인
+            setTimeout(() => {
+                const cards = processCardsGroup.querySelectorAll('.process-card');
+                console.log(`🔍 생성된 카드 수: ${cards.length}`);
+                cards.forEach((card, index) => {
+                    const rect = card.getBoundingClientRect();
+                    console.log(`📏 카드 ${index + 1} 크기: ${rect.width}x${rect.height}`);
+                    if (rect.height === 0) {
+                        console.error(`❌ 카드 ${index + 1}이 보이지 않습니다!`);
+                        // 강제로 스타일 적용
+                        card.style.display = 'block';
+                        card.style.minHeight = '200px';
+                        card.style.opacity = '1';
+                        card.style.visibility = 'visible';
+                    }
+                });
+            }, 50);
+            
+            
+            // 스크롤을 맨 아래로
+            scrollToBottom();
+            
+            // 이미 Phase 1 타이머는 위에서 시작됨
+            // 추가로 시작할 타이머 없음
+            console.log('🎆 displayUserQuestion 완료');
+        }
+
+        // 프로세스 타이머 시작
+        function startProcessTimer(processKey, timestamp) {
+            const timerKey = `${processKey}-${timestamp}`;
+            const timerId = `timer-${timerKey}`;
+            
+            processTimers[timerKey] = setInterval(() => {
+                const timerElement = document.getElementById(timerId);
+                if (timerElement) {
+                    const currentTime = parseFloat(timerElement.textContent) || 0;
+                    timerElement.textContent = `${(currentTime + 0.1).toFixed(1)}초`;
+                }
+            }, 100); // 0.1초마다 업데이트
+        }
+        
+        // 프로세스 타이머 중지
+        function stopProcessTimer(processKey, timestamp) {
+            const timerKey = `${processKey}-${timestamp}`;
+            if (processTimers[timerKey]) {
+                clearInterval(processTimers[timerKey]);
+                delete processTimers[timerKey];
+            }
+        }
+        
+        // 전역 오류 처리
+        function displayGlobalError(errorMessage) {
+            console.error('Global error:', errorMessage);
+            // 모든 로딩 중인 카드에 오류 표시
+            const cardsGroup = document.getElementById(window.currentCardsGroupId);
+            if (cardsGroup) {
+                const loadingCards = cardsGroup.querySelectorAll('.process-card.loading');
+                loadingCards.forEach((card, index) => {
+                    const mode = ['local-basic', 'local-custom', 'chatgpt-basic', 'chatgpt-custom'][index];
+                    displayError(mode, errorMessage, index);
+                });
+            }
+        }
+        
+        // 스크롤 함수
+        function scrollToBottom() {
+            const chatHistory = document.getElementById('chatHistory');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // 전역 오류 표시 함수
+        function displayGlobalError(message) {
+            const resultsGrid = document.getElementById('resultsGrid');
+            if (resultsGrid) {
+                resultsGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #e74c3c; background: #fff; border-radius: 12px; border: 2px solid #e74c3c;">
+                        <h3>❌ 오류 발생</h3>
+                        <p>${message}</p>
+                        <button onclick="location.reload()" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">새로고침</button>
+                    </div>
+                `;
+            }
+            
+            // 입력 다시 활성화
+            setTimeout(() => {
+                const input = document.getElementById('messageInput');
+                const btn = document.getElementById('sendBtn');
+                if (input) input.disabled = false;
+                if (btn) btn.disabled = false;
+            }, 1000);
+        }
+        
+        // 오류를 해당 카드에 표시
+        function displayError(mode, errorMessage, index) {
+            // 현재 카드 그룹에서 해당 카드 찾기
+            const cardsGroup = document.getElementById(window.currentCardsGroupId);
+            if (!cardsGroup) {
+                console.error('Cards group not found for error:', window.currentCardsGroupId);
+                return;
+            }
+            
+            // 모드에 따른 카드 인덱스 결정 (새로운 순서: 🏠→🔧→🤖→🧠)
+            const modeIndex = {
+                'local-basic': 0,     // 1번: 🏠 사내서버 vLLM + s3기본
+                'local-custom': 1,    // 2번: 🔧 사내서버 vLLM + s3-chunking
+                'chatgpt-basic': 2,   // 3번: 🤖 ChatGPT + s3기본
+                'chatgpt-custom': 3   // 4번: 🧠 ChatGPT + s3-chunking
+            };
+            
+            const cardIndex = modeIndex[mode];
+            if (cardIndex === undefined) {
+                console.error('Unknown mode for error:', mode);
+                return;
+            }
+            
+            const processCard = cardsGroup.children[cardIndex];
+            if (!processCard) {
+                console.error('Process card not found for error at index:', cardIndex);
+                return;
+            }
+            
+            // 타이머 중지
+            const cardId = processCard.id;
+            const timestamp = cardId.split('-').pop();
+            stopProcessTimer(mode, timestamp);
+            
+            // 로딩 상태 제거 및 오류 상태 추가
+            processCard.classList.remove('loading');
+            processCard.classList.add('error');
+            
+            const cardBody = processCard.querySelector('.process-card-body');
+            cardBody.classList.remove('loading');
+            
+            let html = `
+                <div style="color: #dc3545; margin-bottom: 1rem;">
+                    ❌ ${errorMessage}
+                </div>
+            `;
+            
+            // 사내서버 vLLM 오류인 경우 해결방법 추가
+            if (mode.includes('local')) {
+                html += `
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(255,193,7,0.1); border-radius: 8px; border-left: 3px solid #ffc107;">
+                        <div style="font-weight: bold; color: #f57c00; margin-bottom: 0.5rem;">
+                            🛠️ 해결방법
+                        </div>
+                        <div style="font-size: 0.8rem; color: #6c757d;">
+                            1. 사내서버 vLLM 상태 확인: 192.168.0.224:8412<br>
+                            2. vLLM 서버 재시작이 필요할 수 있음<br>
+                            3. kanana8b 모델 로딩 상태 확인
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="process-meta error">
+                    <div class="status-badge error">
+                        <span>❌ 실패</span>
+                        <span style="color: #6c757d; font-size: 0.8rem; margin-left: 0.5rem;">
+                            📂 ${mode.includes('basic') ? 's3기본' : 's3-chunking'}
+                        </span>
+                    </div>
+                    <div class="time-badge">
+                        ⏱️ 0.00초
                     </div>
                 </div>
             `;
             
-            return panel;
+            cardBody.innerHTML = html;
+            
+            // 스크롤을 맨 아래로
+            scrollToBottom();
+            
+            // 결과 카운트 증가
+            resultCount++;
+            
+            // 모든 결과 완료시 입력 다시 활성화
+            if (resultCount >= 4) {
+                setTimeout(() => {
+                    document.getElementById('messageInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                }, 1000);
+            }
         }
         
-        // 로딩 표시/숨김
-        function showLoading(text) {
-            document.getElementById('loadingText').textContent = text;
-            document.getElementById('loadingIndicator').style.display = 'block';
-            document.getElementById('sendBtn').disabled = true;
+        // 중복 메시지 추가 함수 제거됨
+        
+        // 결과 영역 초기화
+        function clearResultsArea() {
+            document.getElementById('resultsGrid').innerHTML = '';
         }
         
-        function hideLoading() {
-            document.getElementById('loadingIndicator').style.display = 'none';
-            document.getElementById('sendBtn').disabled = false;
+        // 로딩 카드들 생성
+        function createLoadingCards() {
+            const grid = document.getElementById('resultsGrid');
+            const modes = [
+                { key: 'local-basic', title: '사내서버 vLLM + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🏠' },
+                { key: 'local-custom', title: '사내서버 vLLM + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🔧' },
+                { key: 'chatgpt-basic', title: 'ChatGPT API + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🤖' },
+                { key: 'chatgpt-custom', title: 'ChatGPT API + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🧠' }
+            ];
+            
+            modes.forEach((mode, index) => {
+                const loadingCard = `
+                    <div class="loading-card" id="loading-${mode.key}">
+                        <div class="loading-spinner"></div>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">${mode.title}</div>
+                            <div style="color: #666; font-size: 0.9rem;">답변 생성 중...</div>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', loadingCard);
+            });
         }
+        
+        // 결과를 해당 카드에 표시
+        function displayResult(result, mode, originalIndex) {
+            // 현재 카드 그룹에서 해당 카드 찾기
+            const cardsGroup = document.getElementById(window.currentCardsGroupId);
+            if (!cardsGroup) {
+                console.error('Cards group not found:', window.currentCardsGroupId);
+                return;
+            }
+            
+            // 모드에 따른 카드 인덱스 결정 (새로운 순서: 🏠→🔧→🤖→🧠)
+            const modeIndex = {
+                'local-basic': 0,     // 1번: 🏠 사내서버 vLLM + s3기본
+                'local-custom': 1,    // 2번: 🔧 사내서버 vLLM + s3-chunking
+                'chatgpt-basic': 2,   // 3번: 🤖 ChatGPT + s3기본
+                'chatgpt-custom': 3   // 4번: 🧠 ChatGPT + s3-chunking
+            };
+            
+            const cardIndex = modeIndex[mode];
+            if (cardIndex === undefined) {
+                console.error('Unknown mode:', mode);
+                return;
+            }
+            
+            const processCard = cardsGroup.children[cardIndex];
+            if (!processCard) {
+                console.error('Process card not found for index:', cardIndex);
+                return;
+            }
+            
+            // Phase 2 카드가 시작할 때 waiting 상태에서 loading으로 전환
+            if (processCard.classList.contains('waiting')) {
+                console.log(`🔄 [PHASE 2] ${mode} 시작 - waiting에서 loading으로 전환`);
+                processCard.classList.remove('waiting');
+                processCard.classList.add('loading');
+                
+                const cardBody = processCard.querySelector('.process-card-body');
+                cardBody.classList.remove('waiting');
+                cardBody.classList.add('loading');
+                
+                const timestamp = processCard.id.split('-').pop();
+                // waiting 내용을 loading 내용으로 전환
+                cardBody.innerHTML = `
+                    <div class="loading-container">
+                        <div class="process-loading-spinner"></div>
+                        <div class="loading-progress" style="margin-top: 15px; font-weight: 500; color: #495057;">
+                            ⏳ AI가 문서를 검색중입니다...
+                        </div>
+                        <div class="loading-timer" id="timer-${mode}-${timestamp}" style="color: #6c757d; font-size: 0.85rem; margin-top: 8px;">0초 경과</div>
+                        <div class="loading-dots" style="margin-top: 10px; color: #667eea;">
+                            <span>●</span><span>●</span><span>●</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Phase 2 타이머 시작
+                startProcessTimer(mode, timestamp);
+            }
+            
+            // 타이머 중지
+            const cardId = processCard.id;
+            const timestamp = cardId.split('-').pop();
+            stopProcessTimer(mode, timestamp);
+            
+            // 로딩 상태 제거
+            processCard.classList.remove('loading');
+            
+            const cardBody = processCard.querySelector('.process-card-body');
+            cardBody.classList.remove('loading');
+            
+            if (result.success) {
+                // 성공한 경우
+                processCard.classList.add('success');
+                
+                let html = `
+                    <div style="margin-bottom: 1rem; line-height: 1.6;">
+                        ${formatText(result.answer) || '답변을 생성할 수 없습니다.'}
+                    </div>
+                `;
+                
+                // 추천 질문 표시 (유사도 80% 미만시)
+                if (result.suggested_questions && result.suggested_questions.length > 0) {
+                    html += `
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                            <div style="font-weight: 500; margin-bottom: 0.5rem; color: #007bff;">💡 이런 질문들은 어떠신가요?</div>
+                            ${result.suggested_questions.map(q => `
+                                <div style="margin: 0.3rem 0; cursor: pointer; color: #007bff; text-decoration: underline;" onclick="askSuggestedQuestion('${q.replace(/'/g, "\\'")}')">
+                                    • ${q}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                
+                // 유사도 정보 추가
+                if (result.similarity_info && result.similarity_info.length > 0) {
+                    const topScore = result.similarity_info[0].score;
+                    html += `
+                        <div class="similarity-info">
+                            <div class="similarity-title">
+                                🔍 유사도 ${topScore} (상위 ${result.similarity_info.length}개)
+                            </div>
+                            ${result.similarity_info.map(item => `
+                                <div class="similarity-item">
+                                    <div class="similarity-rank">
+                                        <strong>순위 ${item.rank}: ${item.score}</strong>
+                                        <span style="font-size: 0.8rem; color: #6c757d;">
+                                            📄 ${item.source || 'Unknown'}
+                                        </span>
+                                    </div>
+                                    <div class="similarity-content">
+                                        ${item.content_preview || '내용 없음'}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                
+                // 처리 시간 및 상태 정보
+                html += `
+                    <div class="process-meta">
+                        <div class="status-badge success">
+                            <span>✅ 성공</span>
+                            <span style="color: #6c757d; font-size: 0.8rem; margin-left: 0.5rem;">
+                                📂 ${result.chunking_type === 'basic' ? 's3기본' : 's3-chunking'} (${result.chunking_type || 'undefined'})
+                            </span>
+                        </div>
+                        <div class="time-badge">
+                            ⏱️ ${parseFloat(result.response_time || result.total_time || 0).toFixed(3)}초
+                        </div>
+                    </div>
+                `;
+                
+                cardBody.innerHTML = html;
+                
+            } else {
+                // 실패한 경우
+                processCard.classList.add('error');
+                
+                let html = `
+                    <div style="color: #dc3545; margin-bottom: 1rem;">
+                        ❌ ${result.answer || '처리 중 오류가 발생했습니다.'}
+                    </div>
+                `;
+                
+                // 사내서버 vLLM 오류인 경우 해결방법 추가
+                if (mode.includes('local')) {
+                    html += `
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(255,193,7,0.1); border-radius: 8px; border-left: 3px solid #ffc107;">
+                            <div style="font-weight: bold; color: #f57c00; margin-bottom: 0.5rem;">
+                                🛠️ 해결방법
+                            </div>
+                            <div style="font-size: 0.8rem; color: #6c757d;">
+                                1. 터미널에서 "ollama serve" 명령 실행<br>
+                                2. "ollama list"로 모델 확인<br>
+                                3. 모델 없으면 "ollama pull llama2" 로 설치
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div class="process-meta error">
+                        <div class="status-badge error">
+                            <span>❌ 실패</span>
+                            <span style="color: #6c757d; font-size: 0.8rem; margin-left: 0.5rem;">
+                                📂 ${result.chunking_type === 'basic' ? 's3기본' : 's3-chunking'} (${result.chunking_type || 'undefined'})
+                            </span>
+                        </div>
+                        <div class="time-badge">
+                            ⏱️ ${parseFloat(result.response_time || result.total_time || 0).toFixed(3)}초
+                        </div>
+                    </div>
+                `;
+                
+                cardBody.innerHTML = html;
+            }
+            
+            // 스크롤을 맨 아래로
+            scrollToBottom();
+            
+            // 결과 카운트 증가
+            resultCount++;
+            
+            // 모든 결과 완료시 입력 다시 활성화
+            if (resultCount >= 4) {
+                setTimeout(() => {
+                    document.getElementById('messageInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                }, 1000);
+            }
+        }
+        
+        // 중복 메시지 추가 함수 제거됨
+        
+        // 결과 영역 초기화
+        function clearResultsArea() {
+            document.getElementById('resultsGrid').innerHTML = '';
+        }
+        
+        // 로딩 카드들 생성
+        function createLoadingCards() {
+            const grid = document.getElementById('resultsGrid');
+            const modes = [
+                { key: 'local-basic', title: '사내서버 vLLM + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🏠' },
+                { key: 'local-custom', title: '사내서버 vLLM + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🔧' },
+                { key: 'chatgpt-basic', title: 'ChatGPT API + 기본청킹전략(1000자 나누기 200중첩)(s3 폴더)', icon: '🤖' },
+                { key: 'chatgpt-custom', title: 'ChatGPT API + 커스텀 청킹전략(1000자 나누기 200중첩)(s3-chunking 폴더)', icon: '🧠' }
+            ];
+            
+            modes.forEach((mode, index) => {
+                const loadingCard = `
+                    <div class="loading-card" id="loading-${mode.key}">
+                        <div class="loading-spinner"></div>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">${mode.title}</div>
+                            <div style="color: #666; font-size: 0.9rem;">답변 생성 중...</div>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', loadingCard);
+            });
+        }
+        
+        // 이 함수는 카드 레이아웃에서 사용하지 않음 (위의 displayResult 함수 사용)
+        
+        // 중복된 메시지 관련 함수들 제거됨
+        
+        // 이 채팅 버전의 displayError 함수는 사용하지 않음 (위의 카드 버전 사용)
+        
+        // 현재 세션 저장
+        function saveCurrentSession() {
+            if (currentQuery) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('ko-KR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+                
+                const newSession = {
+                    id: Date.now(),
+                    question: currentQuery.length > 40 ? currentQuery.substring(0, 40) + '...' : currentQuery,
+                    fullQuestion: currentQuery,
+                    timestamp: now.toISOString(),
+                    displayTime: timeString,
+                    resultCount: resultCount
+                };
+                
+                chatSessions.unshift(newSession);
+                
+                // 최대 20개까지만 저장
+                if (chatSessions.length > 20) {
+                    chatSessions = chatSessions.slice(0, 20);
+                }
+                
+                localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
+                updateSidebarHistory();
+            }
+        }
+        
+        // 사이드바 히스토리 업데이트
+        function updateSidebarHistory() {
+            const sidebar = document.getElementById('historySidebar');
+            if (!sidebar) return;
+            
+            // chatSessions가 배열인지 확인
+            if (!Array.isArray(chatSessions)) {
+                console.error('chatSessions is not an array:', chatSessions);
+                chatSessions = [];
+            }
+            
+            if (chatSessions.length === 0) {
+                sidebar.innerHTML = `
+                    <div style="text-align: center; color: #666; font-style: italic; padding: 1rem;">
+                        채팅 기록이 없습니다
+                    </div>
+                `;
+                return;
+            }
+            
+            sidebar.innerHTML = chatSessions.map((session, index) => `
+                <div class="history-item-sidebar ${index === 0 ? 'active' : ''}" onclick="loadSession(${index})">
+                    <div class="history-question">${session.question}</div>
+                    <div class="history-meta">
+                        <span>${session.resultCount}개 결과</span>
+                        <span>${new Date(session.timestamp).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function loadSession(index) {
+            const session = chatSessions[index];
+            document.getElementById('messageInput').value = session.fullQuestion;
+        }
+        
+        // 로딩 관련 함수들은 카드 레이아웃에서 사용하지 않음
         
         // 관리자 패널
         function showAdminPanel() {
@@ -892,29 +3405,209 @@
         function hideAdminPanel() {
             document.getElementById('adminPanel').style.display = 'none';
         }
-        
-        // 관리자 액션
-        async function adminAction(action) {
-            if (!confirm('정말 실행하시겠습니까?')) return;
+
+        // 시스템 초기화 함수
+        async function initializeSystem() {
+            if (!confirm('⚠️ 모든 데이터가 삭제되고 문서가 다시 로드됩니다. 계속하시겠습니까?')) {
+                return;
+            }
+
+            // 관리자 패널 숨기고 초기화 팝업 표시
+            hideAdminPanel();
+            document.getElementById('initializationPopup').style.display = 'block';
+
+            try {
+                // 1단계: 모든 데이터 삭제
+                document.getElementById('step1').style.display = 'flex';
+                await fetch('/api/admin/clear-all', { method: 'DELETE' });
+
+                // 2단계: 문서 로드
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'flex';
+
+                // 3단계: 임베딩 생성 (로드와 함께 진행됨)
+                document.getElementById('step2').style.display = 'none';
+                document.getElementById('step3').style.display = 'flex';
+
+                const response = await fetch('/api/admin/reload-documents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clear_all: true })
+                });
+
+                const result = await response.json();
+
+                // 완료 표시
+                document.getElementById('step3').style.display = 'none';
+                document.getElementById('stepComplete').style.display = 'flex';
+                document.getElementById('initializationResult').style.display = 'block';
+
+                console.log('시스템 초기화 완료:', result);
+
+            } catch (error) {
+                console.error('초기화 오류:', error);
+                alert('초기화 중 오류가 발생했습니다: ' + error.message);
+                closeInitializationPopup();
+            }
+        }
+
+        // 문서만 다시 로드
+        async function reloadDocuments() {
+            if (!confirm('문서를 다시 로드하시겠습니까?')) return;
+
+            hideAdminPanel();
             
             try {
-                const response = await fetch(`/api/admin/${action}`, {
-                    method: 'DELETE'
+                const response = await fetch('/api/admin/reload-documents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clear_all: false })
                 });
-                
+
                 const result = await response.json();
-                alert(result.message || '작업이 완료되었습니다.');
                 
+                if (result.status === 'success') {
+                    alert(`문서 로드 완료!\n- 로드된 문서: ${result.documents_loaded}개\n- 생성된 청크: ${result.total_chunks}개`);
+                } else {
+                    alert('문서 로드 실패: ' + result.message);
+                }
             } catch (error) {
-                alert('오류가 발생했습니다: ' + error.message);
+                alert('문서 로드 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        // 초기화 팝업 닫기
+        function closeInitializationPopup() {
+            document.getElementById('initializationPopup').style.display = 'none';
+            // 팝업 상태 초기화
+            document.querySelectorAll('.init-step').forEach(step => step.style.display = 'none');
+            document.getElementById('initializationResult').style.display = 'none';
+        }
+
+        // 벡터DB 상태 확인
+        async function checkVectorDBStatus() {
+            try {
+                const response = await fetch('/api/admin/system-status');
+                const data = await response.json();
+
+                if (data.status === 'success' && data.system_status) {
+                    const vectordb = data.system_status.vectordb;
+                    const documents = data.system_status.documents;
+
+                    // 벡터DB가 비어있거나 문서가 없는 경우 초기화 권장 팝업 표시
+                    if (!vectordb.available || vectordb.doc_count === 0 || !documents.available) {
+                        setTimeout(showInitializationRecommendation, 1000); // 1초 후 표시
+                    }
+                }
+            } catch (error) {
+                console.error('시스템 상태 확인 오류:', error);
+            }
+        }
+
+        // 초기화 권장 팝업 표시
+        function showInitializationRecommendation() {
+            const popup = document.createElement('div');
+            popup.className = 'admin-panel';
+            popup.id = 'initRecommendationPopup';
+            popup.innerHTML = `
+                <div class="admin-content" style="max-width: 500px;">
+                    <h3>📋 시스템 초기화 권장</h3>
+                    <p style="margin: 1rem 0; line-height: 1.6;">
+                        벡터 데이터베이스가 비어있습니다.<br>
+                        S3 폴더에서 문서를 로드하여 채팅을 시작하세요.
+                    </p>
+                    
+                    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+                        <button onclick="startInitialization()" style="padding: 0.8rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                            📥 지금 초기화하기
+                        </button>
+                        <button onclick="dismissInitRecommendation()" style="padding: 0.8rem 1.5rem; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                            나중에 하기
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        // 초기화 권장 팝업에서 초기화 시작
+        function startInitialization() {
+            dismissInitRecommendation();
+            initializeSystem();
+        }
+
+        // 초기화 권장 팝업 닫기
+        function dismissInitRecommendation() {
+            const popup = document.getElementById('initRecommendationPopup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+
+        // 추천 질문 클릭시 자동 질문
+        function askSuggestedQuestion(question) {
+            console.log('🤔 추천 질문 클릭:', question);
+            
+            // 입력창에 질문 설정
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.value = question;
+                
+                // 자동으로 전송
+                setTimeout(() => {
+                    window.sendMessage();
+                }, 100);
             }
         }
         
-        // Enter 키 지원
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+        // 초기화
+        function initializeApp() {
+            updateSidebarHistory();
+            
+            // Enter 키 이벤트
+            document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+        
+        // 페이지 로드시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 페이지 로드 완료');
+            console.log('sendMessage 함수 확인:', typeof window.sendMessage);
+            
+            initializeApp();
+            
+            // 시스템 상태 확인 및 필요시 초기화 팝업 표시
+            checkVectorDBStatus();
+            
+            // 전송 버튼 이벤트 리스너
+            const sendBtn = document.getElementById('sendBtn');
+            if (sendBtn) {
+                sendBtn.addEventListener('click', function() {
+                    console.log('🔘 전송 버튼 클릭됨');
+                    window.sendMessage();
+                });
+                console.log('✅ 전송 버튼 이벤트 리스너 등록됨');
+            } else {
+                console.error('❌ 전송 버튼을 찾을 수 없음');
+            }
+            
+            // 엔터키 이벤트 리스너
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        console.log('⌨️ 엔터키 눌림');
+                        window.sendMessage();
+                    }
+                });
+                console.log('✅ 엔터키 이벤트 리스너 등록됨');
+            } else {
+                console.error('❌ 입력창을 찾을 수 없음');
             }
         });
     </script>

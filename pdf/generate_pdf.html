@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>야놀자 RAG QA 시스템 문서</title>
+    <style>
+        @page {
+            margin: 2cm;
+            size: A4;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: none;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            page-break-before: always;
+        }
+        
+        h1:first-child {
+            page-break-before: auto;
+        }
+        
+        h2 {
+            color: #34495e;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            color: #555;
+            margin-top: 25px;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .warning {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        @media print {
+            body { 
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            h1 { font-size: 18px; }
+            h2 { font-size: 16px; }
+            h3 { font-size: 14px; }
+            pre { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🏢 야놀자 RAG QA 시스템 통합 문서</h1>
+    <div class="highlight">
+        <strong>프로젝트:</strong> 야놀자 LLM 기반 RAG QA 시스템<br>
+        <strong>생성일:</strong> 2024년 12월 19일<br>
+        <strong>버전:</strong> 1.0<br>
+        <strong>대상:</strong> 야놀자 개발팀 & 시스템 관리자
+    </div>
+</div>
+
+<div class="toc">
+    <h3>📋 목차</h3>
+    <ul>
+        <li><strong>1부:</strong> 시스템 개요 및 아키텍처</li>
+        <li><strong>2부:</strong> 야놀자 LLM 설치 가이드</li>
+        <li><strong>3부:</strong> Python RAG 시스템 설치</li>
+        <li><strong>4부:</strong> 서비스 설정 및 모니터링</li>
+        <li><strong>5부:</strong> 트러블슈팅 및 FAQ</li>
+    </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- 1부: 시스템 개요 -->
+<h1>📊 1부: 시스템 개요 및 아키텍처</h1>
+
+<h2>🏗 시스템 아키텍처</h2>
+<ul>
+    <li><strong>Framework:</strong> Flask + LangChain + ChromaDB</li>
+    <li><strong>Vector DB:</strong> ChromaDB (Persistent Storage)</li>
+    <li><strong>LLM Models:</strong> 야놀자 커스텀 LLM + ChatGPT (백업용)</li>
+    <li><strong>Cache:</strong> Redis + SQLite hybrid</li>
+    <li><strong>Frontend:</strong> HTML/JS (4개 카드 비동기 UI)</li>
+    <li><strong>Chunking:</strong> Basic (1000/200) + Custom (/$$/) 전략</li>
+</ul>
+
+<h2>🎯 주요 기능</h2>
+<div class="success">
+<ol>
+    <li><strong>4카드 비동기 UI:</strong> 검색 시 즉시 로딩 영역 표시 → 완료 순서대로 결과 표시</li>
+    <li><strong>이중 벡터DB:</strong> 기본청킹 vs 커스텀청킹 비교</li>
+    <li><strong>야놀자 LLM 통합:</strong> 여행/숙박/고객서비스 특화 모델</li>
+    <li><strong>실시간 스트리밍:</strong> Server-Sent Events로 각 프로세스 독립 처리</li>
+    <li><strong>캐시 시스템:</strong> Redis + SQLite 하이브리드 캐싱</li>
+</ol>
+</div>
+
+<h2>🌐 주요 API 엔드포인트</h2>
+<table>
+    <tr>
+        <th>API</th>
+        <th>Method</th>
+        <th>설명</th>
+    </tr>
+    <tr>
+        <td>/api/chat/stream</td>
+        <td>POST</td>
+        <td>4개 프로세스 스트리밍 (메인)</td>
+    </tr>
+    <tr>
+        <td>/api/chat/yanolja-travel</td>
+        <td>POST</td>
+        <td>야놀자 여행 상담 LLM</td>
+    </tr>
+    <tr>
+        <td>/api/chat/yanolja-hotel</td>
+        <td>POST</td>
+        <td>야놀자 숙박 추천 LLM</td>
+    </tr>
+    <tr>
+        <td>/swagger</td>
+        <td>GET</td>
+        <td>API 문서화</td>
+    </tr>
+    <tr>
+        <td>/enhanced</td>
+        <td>GET</td>
+        <td>관리자 패널</td>
+    </tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- 2부: 야놀자 LLM 설치 -->
+<h1>🤖 2부: 야놀자 LLM 설치 가이드</h1>
+
+<h2>🖥 시스템 요구사항</h2>
+
+<h3>야놀자 LLM 권장 사양</h3>
+<table>
+    <tr>
+        <th>구분</th>
+        <th>최소 사양</th>
+        <th>권장 사양</th>
+    </tr>
+    <tr>
+        <td>OS</td>
+        <td>Ubuntu 20.04+</td>
+        <td>Ubuntu 22.04 LTS</td>
+    </tr>
+    <tr>
+        <td>CPU</td>
+        <td>6 코어</td>
+        <td>8 코어 이상 (Intel Xeon)</td>
+    </tr>
+    <tr>
+        <td>RAM</td>
+        <td>16GB</td>
+        <td>32GB 이상</td>
+    </tr>
+    <tr>
+        <td>Storage</td>
+        <td>100GB SSD</td>
+        <td>200GB SSD</td>
+    </tr>
+    <tr>
+        <td>GPU</td>
+        <td>선택사항</td>
+        <td>NVIDIA GPU 16GB+</td>
+    </tr>
+</table>
+
+<h2>🏢 야놀자 LLM 설치 단계</h2>
+
+<h3>1단계: 기본 환경 설정</h3>
+<pre><code># Ubuntu/Debian 패키지 업데이트
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl wget git python3 python3-pip python3-venv nginx htop
+
+# 시스템 성능 최적화
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+echo 'vm.vfs_cache_pressure=50' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p</code></pre>
+
+<h3>2단계: Ollama 설치</h3>
+<pre><code># Ollama 설치
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# 설치 확인
+ollama --version</code></pre>
+
+<h3>3단계: 야놀자 전용 사용자 생성</h3>
+<pre><code># 야놀자 시스템 사용자 생성
+sudo useradd -r -s /bin/false -d /opt/ollama ollama
+sudo useradd -r -s /bin/false -d /opt/yanolja yanolja
+
+# 디렉토리 생성 및 권한 설정
+sudo mkdir -p /opt/yanolja/{models,data,logs,cache}
+sudo mkdir -p /opt/ollama/models
+sudo chown -R ollama:ollama /opt/ollama
+sudo chown -R yanolja:yanolja /opt/yanolja</code></pre>
+
+<h3>4단계: 야놀자 LLM 서비스 설정</h3>
+<pre><code># 야놀자 전용 Ollama 서비스 파일 생성
+sudo tee /etc/systemd/system/yanolja-ollama.service &lt;&lt;'EOF'
+[Unit]
+Description=Yanolja LLM Server (Ollama)
+Documentation=https://ollama.ai/
+After=network.target
+
+[Service]
+Type=exec
+User=ollama
+Group=ollama
+ExecStart=/usr/local/bin/ollama serve
+Restart=always
+RestartSec=5
+Environment="OLLAMA_HOST=0.0.0.0:11434"
+Environment="OLLAMA_MODELS=/opt/yanolja/models"
+Environment="OLLAMA_DATA=/opt/yanolja/data"
+Environment="OLLAMA_MAX_LOADED_MODELS=3"
+Environment="OLLAMA_NUM_PARALLEL=4"
+
+# 리소스 제한
+MemoryMax=24G
+CPUQuota=800%
+
+[Install]
+WantedBy=multi-user.target
+EOF</code></pre>
+
+<h3>5단계: 야놀자 LLM 모델 다운로드</h3>
+<div class="warning">
+<strong>⚠️ 주의:</strong> 실제 야놀자 LLM 모델명은 야놀자 AI팀에서 제공하는 정확한 이름으로 변경해야 합니다.
+</div>
+
+<pre><code># 야놀자 특화 모델 설치
+sudo -u ollama ollama pull yanolja/travel-assistant:7b
+sudo -u ollama ollama pull yanolja/hotel-recommendation:7b  
+sudo -u ollama ollama pull yanolja/customer-service:7b
+
+# 백업용 한국어 모델
+sudo -u ollama ollama pull llama3.2:3b-instruct-korean
+
+# 설치된 모델 확인
+sudo -u ollama ollama list
+
+# 야놀자 모델 테스트
+sudo -u ollama ollama run yanolja/travel-assistant:7b "제주도 여행 추천해주세요"</code></pre>
+
+<h3>6단계: 서비스 시작</h3>
+<pre><code># 기존 ollama 서비스 중지
+sudo systemctl stop ollama
+sudo systemctl disable ollama
+
+# 야놀자 LLM 서비스 시작
+sudo systemctl daemon-reload
+sudo systemctl enable yanolja-ollama
+sudo systemctl start yanolja-ollama
+
+# 서비스 상태 확인
+sudo systemctl status yanolja-ollama</code></pre>
+
+<div class="page-break"></div>
+
+<!-- 3부: Python RAG 시스템 설치 -->
+<h1>🐍 3부: Python RAG 시스템 설치</h1>
+
+<h2>📁 프로젝트 구조 설정</h2>
+
+<h3>1단계: 야놀자 프로젝트 디렉토리 생성</h3>
+<pre><code># 야놀자 RAG 시스템 디렉토리 생성
+sudo mkdir -p /opt/yanolja-rag-system
+cd /opt/yanolja-rag-system
+
+# 권한 설정
+sudo chown -R $USER:$USER /opt/yanolja-rag-system</code></pre>
+
+<h3>2단계: 소스 코드 배포</h3>
+<pre><code># Git을 통한 배포 (권장)
+git clone &lt;your-yanolja-repository&gt; .
+
+# 또는 기존 소스 복사
+# cp -r /path/to/rag-qa-system/* .</code></pre>
+
+<h3>3단계: Python 가상환경 설정</h3>
+<pre><code># Python 가상환경 생성
+python3 -m venv yanolja-venv
+
+# 가상환경 활성화
+source yanolja-venv/bin/activate
+
+# 의존성 패키지 설치
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 야놀자 추가 패키지
+pip install ollama==0.2.1 korean-tokenizer</code></pre>
+
+<h2>⚙️ 야놀자 특화 환경설정</h2>
+
+<h3>환경변수 파일 (.env) 생성</h3>
+<pre><code># 야놀자 전용 환경변수
+PROJECT_NAME=YANOLJA_RAG_SYSTEM
+COMPANY=YANOLJA
+VERSION=1.0.0
+
+# LLM 설정
+OLLAMA_BASE_URL=http://localhost:11434
+YANOLJA_TRAVEL_MODEL=yanolja/travel-assistant:7b
+YANOLJA_HOTEL_MODEL=yanolja/hotel-recommendation:7b
+YANOLJA_CS_MODEL=yanolja/customer-service:7b
+
+# Flask 설정
+FLASK_DEBUG=False
+FLASK_PORT=5000
+SECRET_KEY=yanolja_secret_key_2024
+
+# 벡터 DB 설정
+CHROMA_PERSIST_DIRECTORY=/opt/yanolja-rag-system/data/vectordb
+
+# 야놀자 비즈니스 설정
+YANOLJA_API_TIMEOUT=30
+YANOLJA_MAX_RETRIES=3
+YANOLJA_CACHE_TTL=3600</code></pre>
+
+<div class="page-break"></div>
+
+<!-- 4부: 서비스 설정 -->
+<h1>🔧 4부: 서비스 설정 및 모니터링</h1>
+
+<h2>🚀 야놀자 RAG 서비스 설정</h2>
+
+<h3>Systemd 서비스 파일 생성</h3>
+<pre><code>sudo tee /etc/systemd/system/yanolja-rag.service &lt;&lt;EOF
+[Unit]
+Description=Yanolja RAG QA System with LLM
+After=network.target yanolja-ollama.service
+Wants=yanolja-ollama.service
+Requires=yanolja-ollama.service
+
+[Service]
+Type=exec
+User=$USER
+Group=$USER
+WorkingDirectory=/opt/yanolja-rag-system
+ExecStart=/opt/yanolja-rag-system/yanolja-venv/bin/python app.py
+Restart=always
+RestartSec=10
+Environment="PATH=/opt/yanolja-rag-system/yanolja-venv/bin"
+EnvironmentFile=/opt/yanolja-rag-system/.env
+
+# 리소스 제한
+MemoryMax=8G
+CPUQuota=400%
+
+[Install]
+WantedBy=multi-user.target
+EOF</code></pre>
+
+<h2>🌐 Nginx 설정</h2>
+
+<h3>야놀자 전용 Nginx 설정</h3>
+<pre><code>sudo tee /etc/nginx/sites-available/yanolja-rag &lt;&lt;'EOF'
+server {
+    listen 80;
+    server_name yanolja-rag.company.com;
+    
+    # 야놀자 브랜딩
+    add_header X-Powered-By "Yanolja RAG System";
+    
+    # 메인 애플리케이션
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Company "Yanolja";
+        
+        # 스트리밍 최적화
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+    }
+    
+    # API 엔드포인트
+    location /api/yanolja {
+        proxy_pass http://127.0.0.1:5000/api/yanolja;
+    }
+    
+    # Swagger UI (내부 접근만)
+    location /swagger {
+        proxy_pass http://127.0.0.1:5000/swagger;
+        allow 192.168.0.0/16;
+        allow 10.0.0.0/8;
+        deny all;
+    }
+}
+EOF</code></pre>
+
+<h2>📊 모니터링 설정</h2>
+
+<h3>야놀자 모니터링 스크립트</h3>
+<pre><code>#!/bin/bash
+echo "🏢 야놀자 RAG 시스템 모니터링"
+echo "================================"
+
+# 서비스 상태
+systemctl is-active yanolja-ollama && echo "✅ 야놀자 LLM: 활성"
+systemctl is-active yanolja-rag && echo "✅ 야놀자 RAG: 활성"
+
+# 메모리 사용량
+echo -e "\n💾 메모리 사용량:"
+free -h
+
+# 야놀자 모델 상태
+echo -e "\n🤖 야놀자 LLM 모델:"
+curl -s http://localhost:11434/api/tags | \
+  jq -r '.models[] | select(.name | contains("yanolja")) | .name'</code></pre>
+
+<div class="page-break"></div>
+
+<!-- 5부: 트러블슈팅 -->
+<h1>🛠 5부: 트러블슈팅 및 FAQ</h1>
+
+<h2>❓ 자주 발생하는 문제들</h2>
+
+<h3>1. 야놀자 LLM 모델이 로드되지 않는 경우</h3>
+<div class="warning">
+<strong>증상:</strong> 모델 호출 시 "model not found" 에러
+</div>
+<pre><code># 해결방법:
+# 1. 모델 목록 확인
+sudo -u ollama ollama list
+
+# 2. 모델 재다운로드
+sudo -u ollama ollama pull yanolja/travel-assistant:7b
+
+# 3. 서비스 재시작
+sudo systemctl restart yanolja-ollama</code></pre>
+
+<h3>2. 메모리 부족 문제</h3>
+<div class="warning">
+<strong>증상:</strong> 시스템이 느려지거나 응답하지 않음
+</div>
+<pre><code># 해결방법:
+# 1. 스왑 파일 생성
+sudo fallocate -l 8G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 2. 모델 개수 제한
+Environment="OLLAMA_MAX_LOADED_MODELS=1"</code></pre>
+
+<h3>3. 포트 충돌 문제</h3>
+<div class="warning">
+<strong>증상:</strong> 서비스가 시작되지 않음
+</div>
+<pre><code># 해결방법:
+# 1. 포트 사용 확인
+sudo lsof -i :11434
+sudo lsof -i :5000
+
+# 2. 충돌 프로세스 종료
+sudo pkill -f ollama
+sudo pkill -f "python app.py"</code></pre>
+
+<h2>✅ 야놀자 시스템 체크리스트</h2>
+
+<table>
+    <tr>
+        <th>구분</th>
+        <th>체크항목</th>
+        <th>확인방법</th>
+    </tr>
+    <tr>
+        <td rowspan="3">LLM 서비스</td>
+        <td>Ollama 서비스 동작</td>
+        <td>systemctl status yanolja-ollama</td>
+    </tr>
+    <tr>
+        <td>야놀자 모델 설치</td>
+        <td>ollama list | grep yanolja</td>
+    </tr>
+    <tr>
+        <td>API 응답 테스트</td>
+        <td>curl http://localhost:11434/api/tags</td>
+    </tr>
+    <tr>
+        <td rowspan="2">RAG 시스템</td>
+        <td>Python 서비스 동작</td>
+        <td>systemctl status yanolja-rag</td>
+    </tr>
+    <tr>
+        <td>웹 UI 접속</td>
+        <td>curl http://localhost:5000/health</td>
+    </tr>
+    <tr>
+        <td rowspan="2">웹 서버</td>
+        <td>Nginx 설정</td>
+        <td>nginx -t</td>
+    </tr>
+    <tr>
+        <td>도메인 접속</td>
+        <td>브라우저에서 접속 확인</td>
+    </tr>
+</table>
+
+<h2>🎯 야놀자 시스템 접속 정보</h2>
+
+<div class="success">
+<h3>메인 서비스</h3>
+<ul>
+    <li><strong>야놀자 RAG 시스템:</strong> http://your-domain.com/</li>
+    <li><strong>API 문서:</strong> http://your-domain.com/swagger/</li>
+    <li><strong>관리자 패널:</strong> http://your-domain.com/enhanced</li>
+</ul>
+
+<h3>야놀자 LLM 모델 사용법</h3>
+<pre><code># 여행 상담
+curl -X POST http://localhost:11434/api/generate \
+  -d '{"model": "yanolja/travel-assistant:7b", "prompt": "제주도 여행 추천"}'
+
+# 숙박 추천
+curl -X POST http://localhost:11434/api/generate \
+  -d '{"model": "yanolja/hotel-recommendation:7b", "prompt": "서울 호텔 추천"}'</code></pre>
+</div>
+
+<div class="footer">
+    <div style="text-align: center; margin-top: 50px;">
+        <hr>
+        <p><strong>🏢 야놀자 RAG QA 시스템 통합 문서</strong></p>
+        <p>생성일: 2024년 12월 19일 | 버전: 1.0 | 야놀자 AI팀</p>
+        <p>문의: 야놀자 AI팀 | 시스템 관리자</p>
+    </div>
+</div>
+
+<script>
+    // PDF 생성 함수
+    function generatePDF() {
+        window.print();
+    }
+    
+    // 페이지 로드 시 자동 프린트 대화상자 표시
+    window.onload = function() {
+        setTimeout(function() {
+            if (confirm('PDF로 저장하시겠습니까?')) {
+                window.print();
+            }
+        }, 1000);
+    };
+</script>
+
+</body>
+</html>

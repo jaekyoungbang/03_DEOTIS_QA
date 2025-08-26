@@ -384,6 +384,176 @@
             border-left: 4px solid #dc3545;
         }
         
+        /* 4방향 멀티 벤치마킹 스타일 */
+        .multi-benchmark-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        .phases-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .phase-info {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .phase-1 {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+        
+        .phase-2 {
+            border-color: #f39c12;
+            background: #fffbf0;
+        }
+        
+        .phase-methods {
+            display: flex;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .method-badge {
+            background: #34495e;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .phase-duration {
+            font-weight: 500;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .waiting-status {
+            color: #f39c12;
+            font-weight: 500;
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+        
+        .four-results-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .result-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+            transition: all 0.3s;
+        }
+        
+        .result-card.phase-2-card {
+            opacity: 0.6;
+            border-color: #f39c12;
+        }
+        
+        .card-header {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .timer {
+            color: #27ae60;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-indicator {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-indicator.waiting {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .status-indicator.running {
+            background: #3498db;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-indicator.completed {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .status-indicator.error {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        .result-content {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .overall-stats {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            display: block;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
         /* 반응형 */
         @media (max-width: 768px) {
             .results-container {
@@ -396,6 +566,18 @@
             
             .model-options {
                 grid-template-columns: 1fr;
+            }
+            
+            .phases-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .four-results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -419,9 +601,13 @@
                     <h4>🏠 로컬 LLM</h4>
                     <p>LLaMA 3.2<br>개인정보 보호 우선</p>
                 </div>
-                <div class="model-option selected" data-mode="benchmark" onclick="selectModel('benchmark')">
+                <div class="model-option" data-mode="benchmark" onclick="selectModel('benchmark')">
                     <h4>⚡ 벤치마킹 모드</h4>
                     <p>두 모델 동시 비교<br>성능 및 품질 분석</p>
+                </div>
+                <div class="model-option selected" data-mode="multi-benchmark" onclick="selectModel('multi-benchmark')">
+                    <h4>🚀 4방향 벤치마킹</h4>
+                    <p>4가지 방법 순차 비교<br>🏠+s3기본 → 🤖+s3기본 → 🔧+s3청킹 → 🧠+s3청킹</p>
                 </div>
             </div>
         </div>
@@ -566,10 +752,88 @@
                 </div>
             </div>
         </div>
+        
+        <!-- 4방향 멀티 벤치마킹 결과 -->
+        <div class="multi-benchmark-container" id="multiBenchmarkContainer" style="display: none;">
+            <!-- Phase 정보 -->
+            <div class="phases-info">
+                <div class="phase-info phase-1">
+                    <h4>🚀 Phase 1: 기본 방법들 (동시 실행)</h4>
+                    <div class="phase-methods">
+                        <span class="method-badge">🏠 로컬LLM + s3기본</span>
+                        <span class="method-badge">🤖 ChatGPT + s3기본</span>
+                    </div>
+                    <div class="phase-duration" id="phase1Duration">소요 시간: -</div>
+                </div>
+                <div class="phase-info phase-2">
+                    <h4>⏳ Phase 2: 청킹 방법들 (Phase 1 완료 후 실행)</h4>
+                    <div class="phase-methods">
+                        <span class="method-badge">🔧 로컬LLM + s3-chunking</span>
+                        <span class="method-badge">🧠 ChatGPT + s3-chunking</span>
+                    </div>
+                    <div class="phase-duration" id="phase2Duration">소요 시간: -</div>
+                    <div class="waiting-status" id="phase2WaitingStatus">이전 작업 종료 대기중...</div>
+                </div>
+            </div>
+            
+            <!-- 4개 결과 그리드 -->
+            <div class="four-results-grid">
+                <div class="result-card" id="result-chatgpt-basic">
+                    <div class="card-header">🤖 ChatGPT + s3기본</div>
+                    <div class="timer" id="timer-chatgpt-basic">⏱️ -</div>
+                    <div class="status-indicator waiting" id="status-chatgpt-basic">대기중</div>
+                    <div class="result-content" id="content-chatgpt-basic">-</div>
+                </div>
+                
+                <div class="result-card" id="result-local-basic">
+                    <div class="card-header">🏠 로컬LLM + s3기본</div>
+                    <div class="timer" id="timer-local-basic">⏱️ -</div>
+                    <div class="status-indicator waiting" id="status-local-basic">대기중</div>
+                    <div class="result-content" id="content-local-basic">-</div>
+                </div>
+                
+                <div class="result-card phase-2-card" id="result-chatgpt-custom">
+                    <div class="card-header">🧠 ChatGPT + s3-chunking</div>
+                    <div class="timer" id="timer-chatgpt-custom">⏱️ -</div>
+                    <div class="status-indicator waiting" id="status-chatgpt-custom">이전 작업 종료 대기중...</div>
+                    <div class="result-content" id="content-chatgpt-custom">-</div>
+                </div>
+                
+                <div class="result-card phase-2-card" id="result-local-custom">
+                    <div class="card-header">🔧 로컬LLM + s3-chunking</div>
+                    <div class="timer" id="timer-local-custom">⏱️ -</div>
+                    <div class="status-indicator waiting" id="status-local-custom">이전 작업 종료 대기중...</div>
+                    <div class="result-content" id="content-local-custom">-</div>
+                </div>
+            </div>
+            
+            <!-- 전체 통계 -->
+            <div class="overall-stats" id="overallStats">
+                <h4>📊 전체 실행 통계</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">총 소요 시간</span>
+                        <span class="stat-value" id="totalExecutionTime">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">성공한 방법</span>
+                        <span class="stat-value" id="successfulMethods">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Phase 1 시간</span>
+                        <span class="stat-value" id="phase1Time">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Phase 2 시간</span>
+                        <span class="stat-value" id="phase2Time">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
-        let currentMode = 'benchmark';
+        let currentMode = 'multi-benchmark';
         
         // 모델 선택
         function selectModel(mode) {
@@ -585,7 +849,8 @@
             const modeNames = {
                 'single-api': 'ChatGPT API',
                 'single-local': '로컬 LLM',
-                'benchmark': '벤치마킹 모드'
+                'benchmark': '벤치마킹 모드',
+                'multi-benchmark': '4방향 벤치마킹'
             };
             document.getElementById('selectedMode').textContent = modeNames[mode];
             
@@ -598,6 +863,7 @@
             document.getElementById('resultsContainer').style.display = 'none';
             document.getElementById('singleResult').style.display = 'none';
             document.getElementById('comparisonSection').style.display = 'none';
+            document.getElementById('multiBenchmarkContainer').style.display = 'none';
         }
         
         // 질문 제출
@@ -619,13 +885,16 @@
             const loadingTexts = {
                 'single-api': 'ChatGPT API가 답변을 생성하고 있습니다...',
                 'single-local': '로컬 LLM이 답변을 생성하고 있습니다...',
-                'benchmark': '두 LLM이 동시에 답변을 생성하고 있습니다...'
+                'benchmark': '두 LLM이 동시에 답변을 생성하고 있습니다...',
+                'multi-benchmark': 'Phase 1: 🏠로컬LLM+s3기본, 🤖ChatGPT+s3기본 실행 중...'
             };
             document.getElementById('loadingText').textContent = loadingTexts[currentMode];
             
             try {
                 if (currentMode === 'benchmark') {
                     await handleBenchmarkMode(query);
+                } else if (currentMode === 'multi-benchmark') {
+                    await handleMultiBenchmarkMode(query);
                 } else {
                     await handleSingleMode(query, currentMode);
                 }
@@ -654,6 +923,25 @@
                 displayBenchmarkResults(result);
             } else if (result.type === 'error') {
                 displayError(result.message);
+            }
+        }
+        
+        // 4방향 멀티 벤치마킹 모드 처리
+        async function handleMultiBenchmarkMode(query) {
+            const response = await fetch('/api/multi/multi-query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query })
+            });
+            
+            const result = await response.json();
+            
+            if (result.type === 'multi_benchmark_sequential') {
+                displayMultiBenchmarkResults(result);
+            } else if (result.type === 'error') {
+                displayError(result.error || result.message);
             }
         }
         
@@ -753,6 +1041,89 @@
                 const sources = result.similarity_search.map(item => item.metadata?.source || 'Unknown');
                 document.getElementById('singleSources').textContent = 
                     `참조 문서: ${sources.join(', ')}`;
+            }
+        }
+        
+        // 4방향 멀티 벤치마킹 결과 표시
+        function displayMultiBenchmarkResults(result) {
+            document.getElementById('multiBenchmarkContainer').style.display = 'block';
+            
+            // Phase 정보 업데이트
+            if (result.execution_phases) {
+                if (result.execution_phases.phase1) {
+                    document.getElementById('phase1Duration').textContent = 
+                        `소요 시간: ${result.execution_phases.phase1.duration.toFixed(2)}초`;
+                }
+                if (result.execution_phases.phase2) {
+                    document.getElementById('phase2Duration').textContent = 
+                        `소요 시간: ${result.execution_phases.phase2.duration.toFixed(2)}초`;
+                    // Phase 2 완료 시 대기 상태 제거
+                    document.getElementById('phase2WaitingStatus').style.display = 'none';
+                }
+            }
+            
+            // 각 방법별 결과 표시
+            const methodMapping = {
+                'chatgpt-basic': { id: 'chatgpt-basic', emoji: '🤖', name: 'ChatGPT + s3기본' },
+                'local-basic': { id: 'local-basic', emoji: '🏠', name: '로컬LLM + s3기본' },
+                'chatgpt-custom': { id: 'chatgpt-custom', emoji: '🧠', name: 'ChatGPT + s3-chunking' },
+                'local-custom': { id: 'local-custom', emoji: '🔧', name: '로컬LLM + s3-chunking' }
+            };
+            
+            result.results.forEach(methodResult => {
+                const methodInfo = methodMapping[methodResult.mode];
+                if (!methodInfo) return;
+                
+                const statusId = `status-${methodInfo.id}`;
+                const timerId = `timer-${methodInfo.id}`;
+                const contentId = `content-${methodInfo.id}`;
+                
+                // 타이머 업데이트
+                const responseTime = methodResult.result.response_time || methodResult.processing_time || 0;
+                document.getElementById(timerId).textContent = `⏱️ ${responseTime.toFixed(2)}초`;
+                
+                // 상태 업데이트
+                const statusElement = document.getElementById(statusId);
+                if (methodResult.success && methodResult.result.success) {
+                    statusElement.textContent = '완료';
+                    statusElement.className = 'status-indicator completed';
+                } else {
+                    statusElement.textContent = '오류';
+                    statusElement.className = 'status-indicator error';
+                }
+                
+                // 내용 업데이트
+                const contentElement = document.getElementById(contentId);
+                if (methodResult.result.answer) {
+                    // 답변을 적절한 길이로 자르기
+                    let answer = methodResult.result.answer;
+                    if (answer.length > 200) {
+                        answer = answer.substring(0, 200) + '...';
+                    }
+                    contentElement.textContent = answer;
+                } else {
+                    contentElement.innerHTML = '<span style="color: #e74c3c;">답변 생성 실패</span>';
+                }
+                
+                // Phase 2 카드들의 opacity 정상화
+                if (methodInfo.id.includes('custom')) {
+                    const cardElement = document.getElementById(`result-${methodInfo.id}`);
+                    if (cardElement) {
+                        cardElement.style.opacity = '1';
+                    }
+                }
+            });
+            
+            // 전체 통계 업데이트
+            if (result.summary) {
+                document.getElementById('totalExecutionTime').textContent = 
+                    `${result.summary.total_execution_time.toFixed(2)}초`;
+                document.getElementById('successfulMethods').textContent = 
+                    `${result.summary.successful_modes}/${result.summary.total_modes}`;
+                document.getElementById('phase1Time').textContent = 
+                    `${result.summary.phase1_time.toFixed(2)}초`;
+                document.getElementById('phase2Time').textContent = 
+                    `${result.summary.phase2_time.toFixed(2)}초`;
             }
         }
         

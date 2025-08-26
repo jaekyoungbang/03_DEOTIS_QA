@@ -276,49 +276,86 @@ class VectorDBReset(Resource):
     @api.doc('vectordb_reset')
     @admin_required
     def post(self):
-        """벡터 DB 전체 리셋 후 문서 자동 재로드 (관리자용)"""
+        """벡터 DB 전체 리셋 후 BGE-M3로 문서 자동 재로드 (관리자용)"""
         try:
+            import os
+            import shutil
+            from pathlib import Path
             from models.embeddings import EmbeddingManager
             from models.vectorstore import VectorStoreManager
             from utils.error_handler import detect_error_type, format_error_response
             
+            # 1. 임베딩 모델 정보 확인
+            embedding_manager = EmbeddingManager()
+            embedding_info = embedding_manager.get_embedding_info()
+            
+            # 2. 기존 벡터DB 백업 및 완전 삭제
+            vectordb_path = Path('./data/vectordb')
+            backup_path = None
+            old_doc_count = 0
+            
+            if vectordb_path.exists():
+                try:
+                    # 기존 문서 수 확인 시도
+                    vectorstore_manager = VectorStoreManager(embedding_manager.get_embeddings())
+                    old_doc_count = vectorstore_manager.get_document_count()
+                except:
+                    old_doc_count = 0
+                
+                # 백업 생성
+                import time
+                backup_name = f"vectordb_backup_{int(time.time())}"
+                backup_path = Path(f'./data/backup/{backup_name}')
+                backup_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                try:
+                    shutil.move(str(vectordb_path), str(backup_path))
+                except:
+                    # 이동 실패 시 강제 삭제
+                    shutil.rmtree(vectordb_path, ignore_errors=True)
+            
+            # 3. 새 벡터DB 디렉토리 생성
+            vectordb_path.mkdir(parents=True, exist_ok=True)
+            
+            # 4. 캐시 초기화
+            cache_path = Path('./data/cache')
+            if cache_path.exists():
+                shutil.rmtree(cache_path, ignore_errors=True)
+                cache_path.mkdir(parents=True, exist_ok=True)
+            
+            # 5. 새 임베딩 매니저로 벡터스토어 초기화
             embedding_manager = EmbeddingManager()
             vectorstore_manager = VectorStoreManager(embedding_manager.get_embeddings())
-            
-            # 기존 문서 수 확인
-            old_doc_count = vectorstore_manager.get_document_count()
-            
-            # 벡터 DB 삭제 및 초기화
-            vectorstore_manager.delete_collection()
             vectorstore_manager.initialize_vectorstore()
             
-            # 문서 자동 재로드
+            # 6. 문서 자동 재로드
             try:
-                from load_documents import load_s3_documents
-                documents_loaded, total_chunks = load_s3_documents()
+                from load_documents_new import main as reload_documents
+                reload_result = reload_documents()
                 
                 return {
-                    "message": "관리자 벡터 DB 리셋 및 문서 재로드 완료",
+                    "message": f"벡터 DB가 {embedding_info['type']} ({embedding_info['dimension']}차원)으로 완전 초기화 및 문서 재로드 완료",
+                    "embedding_model": embedding_info,
                     "old_document_count": old_doc_count,
-                    "documents_loaded": documents_loaded,
-                    "total_chunks": total_chunks,
+                    "backup_path": str(backup_path) if backup_path else None,
+                    "reload_result": reload_result,
                     "status": "success",
                     "timestamp": datetime.datetime.now().isoformat()
                 }
             except Exception as reload_error:
                 return {
-                    "message": "벡터 DB는 리셋되었으나 문서 재로드 실패",
+                    "message": f"벡터 DB는 {embedding_info['type']}으로 초기화되었으나 문서 재로드 실패",
+                    "embedding_model": embedding_info,
                     "old_document_count": old_doc_count,
+                    "backup_path": str(backup_path) if backup_path else None,
                     "error": str(reload_error),
-                    "documents_loaded": 0,
-                    "total_chunks": 0,
                     "status": "partial_failure",
                     "timestamp": datetime.datetime.now().isoformat()
                 }, 207  # Multi-Status
             
         except Exception as e:
             return {
-                'error': f'벡터 DB 리셋 오류: {str(e)}',
+                'error': f'벡터 DB 초기화 오류: {str(e)}',
                 'timestamp': datetime.datetime.now().isoformat()
             }, 500
 

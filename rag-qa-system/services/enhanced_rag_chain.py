@@ -35,17 +35,46 @@ class EnhancedRAGChain:
         # 4. 일반 모드인 경우
         return self._process_normal_mode(query, grouped_results)
     
-    def _search_documents(self, query: str, top_k: int) -> List[Tuple]:
-        """벡터 DB에서 문서 검색"""
+    def _search_documents(self, query: str, top_k: int, chunking_type: str = None) -> List[Tuple]:
+        """벡터 DB에서 문서 검색 - 청킹 타입별 분리 검색"""
         try:
-            # 더 많은 문서를 검색해서 필터링
-            results = self.vectorstore.similarity_search_with_score(
-                query, 
-                k=top_k * 2
-            )
+            print(f"[ENHANCED_RAG] 문서 검색 시작: query='{query}', k={top_k * 2}, chunking_type={chunking_type}")
+            
+            # DualVectorStoreManager에서 청킹 타입별 검색
+            if hasattr(self.vectorstore, 'similarity_search_with_score') and chunking_type:
+                if chunking_type == 'basic':
+                    print("[ENHANCED_RAG] 기본 청킹 전용 검색")
+                    results = self.vectorstore.similarity_search_with_score(query, "basic", k=top_k * 2)
+                elif chunking_type == 'custom':
+                    print("[ENHANCED_RAG] 커스텀 청킹 전용 검색")
+                    results = self.vectorstore.similarity_search_with_score(query, "custom", k=top_k * 2)
+                else:
+                    print("[ENHANCED_RAG] dual_search 사용 (혼합 모드)")
+                    results = self.vectorstore.dual_search(query, k=top_k * 2)
+            # DualVectorStoreManager의 dual_search 사용 (기본값)
+            elif hasattr(self.vectorstore, 'dual_search'):
+                print("[ENHANCED_RAG] DualVectorStoreManager dual_search 사용")
+                results = self.vectorstore.dual_search(query, k=top_k * 2)
+            # 기존 VectorStoreManager 호환성
+            elif hasattr(self.vectorstore, 'similarity_search_with_score'):
+                print("[ENHANCED_RAG] 기존 similarity_search_with_score 사용")
+                results = self.vectorstore.similarity_search_with_score(
+                    query, 
+                    k=top_k * 2
+                )
+            else:
+                print("[ENHANCED_RAG] similarity_search로 폴백")
+                docs = self.vectorstore.similarity_search(query, k=top_k * 2)
+                results = [(doc, 1.0) for doc in docs]  # 임시 점수
+            
+            print(f"[ENHANCED_RAG] 검색 결과: {len(results)}개")
             return results
+            
         except Exception as e:
-            print(f"문서 검색 오류: {e}")
+            print(f"[ENHANCED_RAG] 문서 검색 오류: {e}")
+            import traceback
+            print(f"[ENHANCED_RAG] 트레이스백:")
+            traceback.print_exc()
             return []
     
     def _group_by_similarity(self, results: List[Tuple]) -> List[Dict]:

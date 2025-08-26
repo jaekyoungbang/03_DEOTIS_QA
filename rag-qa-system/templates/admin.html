@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG 시스템 관리자</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .status-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            padding: 15px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status-item.error {
+            border-left-color: #dc3545;
+        }
+        
+        .status-item.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .action-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+            font-weight: 600;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .important-note {
+            background-color: #ffeaa7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #fdcb6e;
+        }
+        
+        .important-note h3 {
+            margin-bottom: 10px;
+            color: #d63031;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RAG 시스템 관리자 페이지</h1>
+        
+        <div id="alert" class="alert"></div>
+        
+        <!-- 시스템 상태 섹션 -->
+        <div class="status-section">
+            <h2>시스템 상태</h2>
+            <div class="status-grid" id="systemStatus">
+                <div class="status-item">
+                    <strong>Redis 캐시:</strong> <span id="redisStatus">확인 중...</span>
+                </div>
+                <div class="status-item">
+                    <strong>RDB (SQLite):</strong> <span id="rdbStatus">확인 중...</span>
+                </div>
+                <div class="status-item">
+                    <strong>벡터 DB:</strong> <span id="vectorStatus">확인 중...</span>
+                </div>
+                <div class="status-item">
+                    <strong>문서 파일:</strong> <span id="docStatus">확인 중...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 데이터 삭제 섹션 -->
+        <div class="action-section">
+            <h2>데이터 삭제</h2>
+            <div class="button-grid">
+                <button class="btn-danger" onclick="clearRedis()">Redis 캐시 삭제</button>
+                <button class="btn-danger" onclick="clearRDB()">RDB 기록 삭제</button>
+                <button class="btn-danger" onclick="clearVectorDB()">벡터 DB 삭제</button>
+                <button class="btn-danger" onclick="clearAll()">전체 초기화</button>
+            </div>
+        </div>
+        
+        <!-- 벡터DB 초기화 섹션 -->
+        <div class="action-section">
+            <h2>벡터 DB 관리</h2>
+            <p style="margin-bottom: 15px; color: #666;">
+                💡 임베딩 차원 불일치 해결: BGE-M3 (1024차원)로 벡터DB 완전 재생성
+            </p>
+            <div class="button-grid">
+                <button class="btn-warning" onclick="resetVectorDBToBGE()">
+                    🔄 BGE-M3로 벡터DB 초기화
+                </button>
+            </div>
+        </div>
+        
+        <!-- 문서 로드 섹션 -->
+        <div class="action-section">
+            <h2>문서 로드</h2>
+            <p style="margin-bottom: 15px;">
+                s3 폴더: 기본 청킹 (1000자, 200자 중복)<br>
+                s3-chunking 폴더: 커스텀 구분자 청킹
+            </p>
+            <div class="button-grid">
+                <button class="btn-success" onclick="reloadDocuments(true)">
+                    초기화 후 문서 로드
+                </button>
+                <button class="btn-primary" onclick="reloadDocuments(false)">
+                    문서만 다시 로드
+                </button>
+            </div>
+            <div class="loader" id="loader">
+                <div class="spinner"></div>
+                <p>문서를 로드하는 중입니다... 잠시만 기다려주세요.</p>
+            </div>
+        </div>
+        
+        <!-- 중요 안내 -->
+        <div class="important-note">
+            <h3>⚠️ 중요 안내</h3>
+            <ul>
+                <li>전체 초기화 후에는 반드시 문서를 다시 로드해야 합니다.</li>
+                <li>문서 로드는 시간이 걸릴 수 있습니다 (파일 크기에 따라 1-5분).</li>
+                <li>s3 폴더와 s3-chunking 폴더에 문서가 있어야 합니다.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 시스템 상태 확인
+        window.onload = function() {
+            checkSystemStatus();
+        };
+        
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/admin/system-status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const status = data.system_status;
+                    
+                    // Redis 상태
+                    const redisEl = document.getElementById('redisStatus');
+                    if (status.redis.available) {
+                        redisEl.textContent = `활성 (${status.redis.info.keys} 키)`;
+                        redisEl.parentElement.className = 'status-item';
+                    } else {
+                        redisEl.textContent = `비활성 (파일 캐시: ${status.redis.info.cache_files} 파일)`;
+                        redisEl.parentElement.className = 'status-item warning';
+                    }
+                    
+                    // RDB 상태
+                    const rdbEl = document.getElementById('rdbStatus');
+                    if (status.rdb.available) {
+                        rdbEl.textContent = `활성 (${status.rdb.files.length} 파일)`;
+                        rdbEl.parentElement.className = 'status-item';
+                    } else {
+                        rdbEl.textContent = '비활성';
+                        rdbEl.parentElement.className = 'status-item error';
+                    }
+                    
+                    // 벡터 DB 상태
+                    const vectorEl = document.getElementById('vectorStatus');
+                    if (status.vectordb.available) {
+                        vectorEl.textContent = `활성 (${status.vectordb.doc_count} 문서)`;
+                        vectorEl.parentElement.className = 'status-item';
+                    } else {
+                        vectorEl.textContent = '비활성 (문서 없음)';
+                        vectorEl.parentElement.className = 'status-item error';
+                    }
+                    
+                    // 문서 파일 상태
+                    const docEl = document.getElementById('docStatus');
+                    if (status.documents.available) {
+                        docEl.textContent = `${status.documents.file_count} 파일`;
+                        docEl.parentElement.className = 'status-item';
+                    } else {
+                        docEl.textContent = '파일 없음';
+                        docEl.parentElement.className = 'status-item error';
+                    }
+                }
+            } catch (error) {
+                console.error('시스템 상태 확인 실패:', error);
+            }
+        }
+        
+        async function clearRedis() {
+            if (!confirm('Redis 캐시를 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch('/api/admin/clear-redis', { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(data.message, 'success');
+                    checkSystemStatus();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('Redis 캐시 삭제 실패', 'danger');
+            }
+        }
+        
+        async function clearRDB() {
+            if (!confirm('RDB 기록을 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch('/api/admin/clear-rdb', { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(data.message, 'success');
+                    checkSystemStatus();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('RDB 삭제 실패', 'danger');
+            }
+        }
+        
+        async function clearVectorDB() {
+            if (!confirm('벡터 DB를 삭제하시겠습니까? 문서를 다시 로드해야 합니다.')) return;
+            
+            try {
+                const response = await fetch('/api/admin/clear-vectordb', { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(data.message + ' 문서를 다시 로드해주세요!', 'warning');
+                    checkSystemStatus();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('벡터 DB 삭제 실패', 'danger');
+            }
+        }
+        
+        async function resetVectorDBToBGE() {
+            if (!confirm('벡터 DB를 BGE-M3 (1024차원)으로 완전 초기화하시겠습니까?\n\n• 기존 벡터DB 백업 후 삭제\n• BGE-M3로 문서 자동 재임베딩\n• 캐시 초기화\n\n이 작업은 몇 분 소요될 수 있습니다.')) return;
+            
+            // 로딩 표시
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '🔄 초기화 중...';
+            
+            try {
+                const response = await fetch('/api/admin/vectordb/reset', { 
+                    method: 'POST',
+                    headers: {
+                        'Authorization': getAuthToken()
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(
+                        `✅ ${data.message}\n\n` +
+                        `• 임베딩 모델: ${data.embedding_model.type} (${data.embedding_model.dimension}차원)\n` +
+                        `• 기존 문서 수: ${data.old_document_count}개\n` +
+                        `• 백업 위치: ${data.backup_path || '없음'}`, 
+                        'success'
+                    );
+                    checkSystemStatus();
+                } else if (data.status === 'partial_failure') {
+                    showAlert(
+                        `⚠️ ${data.message}\n\n` +
+                        `오류: ${data.error}\n\n` +
+                        `수동으로 "문서 재로딩"을 실행해주세요.`, 
+                        'warning'
+                    );
+                    checkSystemStatus();
+                } else {
+                    showAlert(data.error || '벡터 DB 초기화 실패', 'danger');
+                }
+            } catch (error) {
+                showAlert('벡터 DB 초기화 중 오류 발생: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+        
+        async function clearAll() {
+            if (!confirm('모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+            
+            try {
+                const response = await fetch('/api/admin/clear-all', { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.status === 'success' || data.status === 'partial') {
+                    showAlert(data.note || data.message, 'warning');
+                    checkSystemStatus();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('전체 초기화 실패', 'danger');
+            }
+        }
+        
+        async function reloadDocuments(clearAll) {
+            const confirmMsg = clearAll 
+                ? '모든 데이터를 삭제하고 문서를 다시 로드하시겠습니까?' 
+                : '문서를 다시 로드하시겠습니까?';
+                
+            if (!confirm(confirmMsg)) return;
+            
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/admin/reload-documents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ clear_all: clearAll })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showAlert(
+                        `문서 로드 완료! ${data.documents_loaded}개 문서, ${data.total_chunks}개 청크 생성됨`, 
+                        'success'
+                    );
+                    checkSystemStatus();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('문서 로드 실패: ' + error.message, 'danger');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

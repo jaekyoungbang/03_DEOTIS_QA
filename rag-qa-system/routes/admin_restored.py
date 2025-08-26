@@ -4,6 +4,9 @@ import os
 import json
 import shutil
 from datetime import datetime
+import subprocess
+import threading
+import time
 
 admin_restored_bp = Blueprint('admin_restored', __name__)
 
@@ -183,7 +186,7 @@ def clear_all():
             'message': f'전체 초기화 완료. 성공: {success_count}/3',
             'details': results,
             'timestamp': datetime.now().isoformat(),
-            'note': '문서 파일은 삭제되지 않았습니다. 필요시 다시 로드하세요.'
+            'note': '⚠️ 중요: 모든 데이터가 삭제되었습니다. 시스템을 사용하려면 반드시 S3 폴더에서 문서를 다시 로드해주세요!'
         })
         
     except Exception as e:
@@ -271,25 +274,133 @@ def get_system_status():
 def reload_documents():
     """문서 다시 로드"""
     try:
-        # 기존 load_documents.py의 load_s3_documents 함수 호출
-        from load_documents import load_s3_documents
+        # 새로운 load_documents_new.py 사용 (절대 경로로 import)
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from load_documents_new import load_s3_documents
         
-        # 벡터 DB 초기화 후 다시 로드
-        clear_vectordb()
+        # clear_all 옵션 확인
+        clear_all = request.json.get('clear_all', True) if request.json else True
         
-        # 문서 로드 실행
-        documents_loaded, total_chunks = load_s3_documents()
+        # 문서 로드 실행 (clear_all 옵션 포함)
+        documents_loaded, total_chunks = load_s3_documents(clear_before_load=clear_all)
         
         return jsonify({
             'status': 'success',
             'message': '문서가 다시 로드되었습니다.',
             'documents_loaded': documents_loaded,
             'total_chunks': total_chunks,
-            'timestamp': datetime.now().isoformat()
+            'clear_before_load': clear_all,
+            'timestamp': datetime.now().isoformat(),
+            'note': 's3 폴더는 기본청킹(1000/200), s3-chunking 폴더는 커스텀 구분자 청킹이 적용되었습니다.'
         })
         
     except Exception as e:
         return jsonify({
             'status': 'error',
             'message': f'문서 로드 실패: {str(e)}'
+        }), 500
+
+@admin_restored_bp.route('/reset-and-reload', methods=['POST'])
+def reset_and_reload():
+    """전체 시스템 초기화 후 자동으로 문서 재로딩"""
+    try:
+        print("🔄 전체 시스템 초기화 및 재로딩 시작...")
+        
+        # 1단계: 전체 초기화
+        clear_results = {
+            'redis': {'status': 'not_attempted'},
+            'rdb': {'status': 'not_attempted'},
+            'vectordb': {'status': 'not_attempted'}
+        }
+        
+        # Redis 삭제
+        try:
+            redis_result = clear_redis()
+            clear_results['redis'] = {'status': 'success', 'data': redis_result[0].get_json()}
+            print("✅ Redis 캐시 삭제 완료")
+        except Exception as e:
+            clear_results['redis'] = {'status': 'failed', 'error': str(e)}
+            print(f"⚠️ Redis 삭제 실패: {e}")
+        
+        # RDB 삭제
+        try:
+            rdb_result = clear_rdb()
+            clear_results['rdb'] = {'status': 'success', 'data': rdb_result[0].get_json()}
+            print("✅ RDB 데이터 삭제 완료")
+        except Exception as e:
+            clear_results['rdb'] = {'status': 'failed', 'error': str(e)}
+            print(f"⚠️ RDB 삭제 실패: {e}")
+        
+        # 벡터 DB 삭제
+        try:
+            vectordb_result = clear_vectordb()
+            clear_results['vectordb'] = {'status': 'success', 'data': vectordb_result[0].get_json()}
+            print("✅ 벡터 DB 삭제 완료")
+        except Exception as e:
+            clear_results['vectordb'] = {'status': 'failed', 'error': str(e)}
+            print(f"⚠️ 벡터 DB 삭제 실패: {e}")
+        
+        # 잠깐 대기 (리소스 정리)
+        time.sleep(2)
+        
+        # 2단계: 문서 재로딩
+        reload_results = {'status': 'not_attempted'}
+        
+        try:
+            print("📂 문서 재로딩 시작...")
+            
+            # 새로운 load_documents_new.py 사용 (절대 경로로 import)
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from load_documents_new import load_s3_documents
+            
+            # 문서 로드 실행
+            documents_loaded, total_chunks = load_s3_documents(clear_before_load=False)  # 이미 삭제했으므로 False
+            
+            reload_results = {
+                'status': 'success',
+                'documents_loaded': documents_loaded,
+                'total_chunks': total_chunks,
+                'note': 's3 폴더는 기본청킹, s3-chunking 폴더는 /$$/ 구분자 청킹 적용'
+            }
+            print(f"✅ 문서 재로딩 완료: {documents_loaded}개 파일, {total_chunks}개 청크")
+            
+        except Exception as e:
+            reload_results = {
+                'status': 'failed',
+                'error': str(e)
+            }
+            print(f"❌ 문서 재로딩 실패: {e}")
+        
+        # 3단계: 결과 종합
+        clear_success_count = sum(1 for r in clear_results.values() if r['status'] == 'success')
+        reload_success = reload_results['status'] == 'success'
+        
+        overall_status = 'success' if clear_success_count >= 2 and reload_success else 'partial'
+        
+        response_data = {
+            'status': overall_status,
+            'message': f'시스템 초기화 및 재로딩 완료',
+            'clear_results': {
+                'summary': f'초기화 성공: {clear_success_count}/3',
+                'details': clear_results
+            },
+            'reload_results': reload_results,
+            'timestamp': datetime.now().isoformat(),
+            'note': '시스템이 완전히 초기화되고 문서가 다시 로드되었습니다.'
+        }
+        
+        print("🎉 전체 프로세스 완료!")
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"❌ 전체 프로세스 실패: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'시스템 초기화 및 재로딩 실패: {str(e)}',
+            'timestamp': datetime.now().isoformat()
         }), 500
