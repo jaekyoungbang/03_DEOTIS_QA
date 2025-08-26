@@ -25,7 +25,7 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-3. 환경 변수 설정:
+3. 환경 변수  설정:  
 `.env` 파일을 편집하여 API 키 설정:
 ```
 OPENAI_API_KEY=your_openai_api_key_here
@@ -37,7 +37,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 python app.py
 ```
 
-브라우저에서 `http://localhost:5000` 접속
+브라우저에서 `http://localhost:5000` 접속진행
 
 ## 사용 방법
 
