@@ -5,9 +5,9 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_restx import Api, Resource, fields
 from config import Config
-from routes.api import api_bp
 from routes.chat import chat_bp
 from routes.chat_local import chat_local_bp
+from routes.document import document_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -40,9 +40,9 @@ ns_api = api.namespace('api', description='기본 API')
 ns_chat = api.namespace('chat', description='채팅 시스템')
 
 # Register blueprints - 핵심 기능만
-app.register_blueprint(api_bp, url_prefix='/api')
 app.register_blueprint(chat_bp, url_prefix='/api/chat')
 app.register_blueprint(chat_local_bp, url_prefix='/api/chat')
+app.register_blueprint(document_bp, url_prefix='/api/document')
 
 @app.route('/')
 def index():
