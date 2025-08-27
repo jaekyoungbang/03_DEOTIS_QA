@@ -108,7 +108,7 @@ class VectorStoreManager:
             if distance > 2:
                 # L2 거리를 유사도로 변환: exp(-distance/scale)로 더 부드러운 변환
                 import math
-                similarity = math.exp(-distance / 100.0)  # 스케일 조정으로 더 의미있는 범위
+                similarity = math.exp(-distance / 1000.0)  # BGE-M3 1024차원에 맞는 스케일 조정
             else:
                 # cosine distance인 경우: similarity = 1 - distance  
                 similarity = max(0, 1 - distance)
@@ -276,7 +276,7 @@ class DualVectorStoreManager:
             if distance > 2:
                 # L2 거리를 유사도로 변환: exp(-distance/scale)로 더 부드러운 변환
                 import math
-                similarity = math.exp(-distance / 100.0)  # 스케일 조정으로 더 의미있는 범위
+                similarity = math.exp(-distance / 1000.0)  # BGE-M3 1024차원에 맞는 스케일 조정
             else:
                 # cosine distance인 경우: similarity = 1 - distance  
                 similarity = max(0, 1 - distance)

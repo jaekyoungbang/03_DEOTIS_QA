@@ -32,25 +32,7 @@ class CardAnalysisService:
         current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # rag-qa-system 폴더
         self.s3_common_path = os.path.join(current_dir, 's3-common')
         
-        # 카드 이미지 매핑
-        self.card_images = {
-            "우리카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.014.gif",
-            "하나카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.016.gif", 
-            "NH농협카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.017.gif",
-            "SC제일은행": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.015.gif",
-            "IBK기업은행": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.018.gif",
-            "KB국민카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.019.gif",
-            "국민카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.019.gif",
-            "DGB대구은행": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.020.gif",
-            "BNK부산은행": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.021.gif",
-            "BNK경남은행": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.022.gif",
-            "citi은행": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.023.gif",
-            "신한카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.024.gif",
-            "BC바로카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.025.gif",
-            "롯데카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.007.jpeg",
-            "BC카드": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.025.gif",
-            "카드발급절차": "Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.013.gif"
-        }
+        # 하드코딩 제거: 벡터DB 검색 결과에서만 이미지 정보 추출
     
     def analyze_customer_cards(self, customer_name: str) -> CustomerCardAnalysis:
         """고객의 카드 발급 현황을 분석합니다."""
@@ -122,7 +104,7 @@ class CardAnalysisService:
                     name=card_name,
                     bank=card_name,
                     status="보유중",
-                    image_path=self.card_images.get(card_name),
+                    image_path=self._extract_image_from_content(content, card_name),
                     benefits=self._extract_benefits(content, card_name)
                 ))
             
@@ -134,7 +116,7 @@ class CardAnalysisService:
                     name=card_name,
                     bank=card_name,
                     status="발급추천",
-                    image_path=self.card_images.get(card_name),
+                    image_path=self._extract_image_from_content(content, card_name),
                     recommendation_reason=self._extract_recommendation_reason(content, card_name)
                 ))
             
@@ -146,10 +128,26 @@ class CardAnalysisService:
                     name=card_name,
                     bank=card_name,
                     status="발급가능",
-                    image_path=self.card_images.get(card_name)
+                    image_path=self._extract_image_from_content(content, card_name)
                 ))
         
         return owned_cards, available_cards, recommended_cards
+    
+    def _extract_image_from_content(self, content: str, card_name: str) -> Optional[str]:
+        """벡터DB 검색 결과에서 이미지 경로를 추출합니다."""
+        import re
+        # 마크다운 이미지 패턴 찾기: ![alt](image_path)
+        image_pattern = r'!\[.*?\]\(([^)]+)\)'
+        matches = re.findall(image_pattern, content)
+        
+        # 카드명과 관련된 이미지 찾기
+        for image_path in matches:
+            if any(keyword in image_path.lower() or keyword in content.lower() 
+                   for keyword in [card_name.lower().replace('카드', ''), 'card', 'logo']):
+                return image_path
+        
+        # 첫 번째 이미지 반환 (없으면 None)
+        return matches[0] if matches else None
     
     def _extract_benefits(self, content: str, card_name: str) -> List[str]:
         """카드별 혜택을 추출합니다."""
@@ -208,7 +206,7 @@ class CardAnalysisService:
                                     name="우리카드",
                                     bank="우리은행",
                                     status="보유중",
-                                    image_path=self.card_images.get("우리카드", None),
+                                    image_path=None,  # 하드코딩 제거: 벡터DB에서만 이미지 가져오기
                                     benefits=["신용카드"],
                                     issue_date=self._extract_issue_date(line)
                                 ))
@@ -217,7 +215,7 @@ class CardAnalysisService:
                                     name="하나카드",
                                     bank="하나은행",
                                     status="보유중",
-                                    image_path=self.card_images.get("하나카드", None),
+                                    image_path=None,  # 하드코딩 제거: 벡터DB에서만 이미지 가져오기
                                     benefits=["신용카드"],
                                     issue_date=self._extract_issue_date(line)
                                 ))
@@ -226,7 +224,7 @@ class CardAnalysisService:
                                     name="NH농협카드",
                                     bank="농협은행",
                                     status="보유중",
-                                    image_path=self.card_images.get("NH농협카드", None),
+                                    image_path=None,  # 하드코딩 제거: 벡터DB에서만 이미지 가져오기
                                     benefits=["신용카드"],
                                     issue_date=self._extract_issue_date(line)
                                 ))
@@ -251,7 +249,7 @@ class CardAnalysisService:
                                         name=card_name,
                                         bank=card_name.replace('카드', ''),
                                         status="발급추천",
-                                        image_path=self.card_images.get(card_name, None),
+                                        image_path=None,  # 하드코딩 제거: 벡터DB에서만 이미지 가져오기
                                         recommendation_reason="VIP 등급 고객 우대 혜택"
                                     ))
                                 else:
@@ -259,7 +257,7 @@ class CardAnalysisService:
                                         name=card_name,
                                         bank=card_name.replace('카드', ''),
                                         status="발급가능",
-                                        image_path=self.card_images.get(card_name, None)
+                                        image_path=None  # 하드코딩 제거: 벡터DB에서만 이미지 가져오기,
                                     ))
                         
                         print(f"📊 분석 완료: 보유 {len(owned_cards)}, 추천 {len(recommended_cards)}, 가능 {len(available_cards)}")
@@ -305,9 +303,9 @@ class CardAnalysisService:
         if analysis.owned_cards:
             response += f"### ✅ 현재 보유 카드 ({len(analysis.owned_cards)}장)\n\n"
             for i, card in enumerate(analysis.owned_cards, 1):
-                # 카드 이미지 추가
-                if card.name in self.card_images:
-                    response += f"![{card.name} 로고](/images/{self.card_images[card.name]})\n"
+                # 벡터DB에서 추출된 이미지만 사용
+                if card.image_path:
+                    response += f"![{card.name} 로고]({card.image_path})\n"
                 response += f"**{i}. {card.name}** - ✅ 보유중\n"
                 if card.benefits:
                     response += f"- 혜택: {', '.join(card.benefits)}\n"
@@ -317,9 +315,9 @@ class CardAnalysisService:
         if analysis.recommended_cards:
             response += f"### 🌟 발급 추천 카드 ({len(analysis.recommended_cards)}장)\n\n"
             for i, card in enumerate(analysis.recommended_cards, 1):
-                # 카드 이미지 추가
-                if card.name in self.card_images:
-                    response += f"![{card.name} 로고](/images/{self.card_images[card.name]})\n"
+                # 벡터DB에서 추출된 이미지만 사용
+                if card.image_path:
+                    response += f"![{card.name} 로고]({card.image_path})\n"
                 response += f"**{i}. {card.name}** - ⭐ 발급 추천\n"
                 if card.recommendation_reason:
                     response += f"- 추천 이유: {card.recommendation_reason}\n"
@@ -329,18 +327,13 @@ class CardAnalysisService:
         if analysis.available_cards:
             response += f"### 🆕 발급 가능 카드 ({len(analysis.available_cards)}장)\n\n"
             for i, card in enumerate(analysis.available_cards, 1):
-                # 카드 이미지 추가
-                if card.name in self.card_images:
-                    response += f"![{card.name} 로고](/images/{self.card_images[card.name]})\n"
+                # 벡터DB에서 추출된 이미지만 사용
+                if card.image_path:
+                    response += f"![{card.name} 로고]({card.image_path})\n"
                 response += f"**{i}. {card.name}** - 📋 발급 가능\n"
                 response += "\n"
         
-        # BC카드 발급 절차 이미지 추가
-        response += "\n### 📋 BC카드 발급 절차\n"
-        if '카드발급절차' in self.card_images:
-            response += f"![BC카드 발급 절차](/images/{self.card_images['카드발급절차']})\n\n"
-        else:
-            response += "발급 절차 이미지를 찾을 수 없습니다.\n\n"
+        # BC카드 발급 절차는 벡터DB 검색 결과에 포함된 경우만 표시
         
         # 요약
         response += "### 📊 현황 요약\n\n"

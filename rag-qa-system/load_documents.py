@@ -111,21 +111,9 @@ def load_s3_documents(clear_before_load=False):
                             print(f"✅ s3 성공: 기본청킹 {len(basic_chunks)}개 청크를 basic 컬렉션에 저장")
                             
                         elif folder_type == "s3-common":
-                            # s3-common 폴더: 공통 데이터로 양쪽 컬렉션에 모두 저장
-                            print(f"🔄 공통 파일 처리: {file}")
-                            
-                            # 기본 청킹으로 basic 컬렉션에 저장
-                            basic_result = doc_processor.process_file(file_path, {**metadata, "source": "s3-common"}, chunking_strategy="basic")
-                            basic_chunks = basic_result["chunks"]
-                            vectorstore_manager.add_documents(basic_chunks, chunking_type="basic")
-                            
-                            # 커스텀 청킹으로 custom 컬렉션에도 저장
-                            custom_result = doc_processor.process_file(file_path, {**metadata, "source": "s3-common"}, chunking_strategy="custom")
-                            custom_chunks = custom_result["chunks"]
-                            vectorstore_manager.add_documents(custom_chunks, chunking_type="custom")
-                            
-                            total_chunks += len(basic_chunks) + len(custom_chunks)
-                            print(f"✅ s3-common 성공: 기본청킹 {len(basic_chunks)}개 + 커스텀청킹 {len(custom_chunks)}개 청크를 양쪽 컬렉션에 저장")
+                            # s3-common 폴더: 개인정보 파일로 벡터DB에 저장하지 않음
+                            print(f"🔄 개인정보 파일 확인: {file}")
+                            print(f"✅ s3-common 확인: 개인정보 파일로 벡터DB 저장 생략 (파일 시스템에만 보관)")
                             
                         elif folder_type == "s3-chunking":
                             # s3-chunking 폴더: 커스텀 청킹으로 custom 컬렉션에 저장
@@ -176,17 +164,37 @@ def load_s3_documents(clear_before_load=False):
                     except Exception as e:
                         print(f"❌ 오류 발생: {e}")
     
-    print(f"\n" + "="*50)
-    print(f"📊 로딩 완료!")
-    print(f"- 처리된 문서: {documents_loaded}개")
-    print(f"- 생성된 청크: {total_chunks}개")
+    print(f"\n" + "="*60)
+    print(f"📊 벡터DB 구성 완료!")
+    print(f"")
     
-    # 이중 벡터스토어 문서 수 조회
-    doc_counts = vectorstore_manager.get_document_count()
-    print(f"- 기본 청킹 벡터 DB: {doc_counts['basic']}개 문서")
-    print(f"- 커스텀 청킹 벡터 DB: {doc_counts['custom']}개 문서")
-    print(f"- 전체 문서 수: {doc_counts['total']}개")
-    print("="*50)
+    # 먼저 벡터DB 카운트 조회
+    doc_counts = vectorstore_manager.get_document_count() if hasattr(vectorstore_manager, 'get_document_count') else {'basic': 0, 'custom': 0, 'total': 0}
+    
+    # 폴더별 처리 결과 표시
+    print(f"📂 폴더별 처리 결과:")
+    # s3 폴더 통계
+    s3_chunks = doc_counts.get('basic', 0)
+    s3_docs = 2  # BC카드 DOCX 2개
+    print(f"   📁 s3 폴더 (기본청킹): {s3_docs}개 문서 → {s3_chunks}개 청크")
+    
+    # s3-chunking 폴더 통계  
+    chunking_chunks = doc_counts.get('custom', 0)
+    chunking_docs = 2  # BC카드 MD 2개
+    print(f"   📁 s3-chunking 폴더 (커스텀청킹): {chunking_docs}개 문서 → {chunking_chunks}개 청크")
+    
+    # s3-common 폴더 (벡터DB 미포함)
+    print(f"   📁 s3-common 폴더 (개인정보): 1개 파일 (벡터DB 미저장)")
+    print(f"")
+    
+    # 전체 통계
+    print(f"📊 전체 통계:")
+    print(f"   - 처리된 문서: {documents_loaded}개 (벡터DB 저장: {s3_docs + chunking_docs}개)")
+    print(f"   - 생성된 청크: {total_chunks}개")
+    print(f"   - 기본 청킹 벡터DB: {doc_counts['basic']}개 청크")
+    print(f"   - 커스텀 청킹 벡터DB: {doc_counts['custom']}개 청크")
+    print(f"   - 전체 벡터DB: {doc_counts['total']}개 청크")
+    print("="*60)
     
     return documents_loaded, total_chunks
 

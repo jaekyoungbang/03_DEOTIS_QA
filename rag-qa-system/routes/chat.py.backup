@@ -916,120 +916,80 @@ def vllm_dual_stream():
                 for user in user_patterns:
                     if user in question:
                         detected_user = user
-                        print(f"👤 [vLLM {process_id}] 고객명 감지: {user} (청킹: {chunking_type})")
                         break
                 
                 if detected_user:
                     print(f"🔍 [vLLM {process_id}] {detected_user} 고객 감지")
                     card_keywords = ['카드', '발급', '회원은행', '은행별']
                     
-                    # s3-chunking에서만 개인화 카드 분석 처리
-                    if any(keyword in question for keyword in card_keywords) and chunking_type == "custom":
-                        print(f"💳 [vLLM {process_id}] 카드 관련 질의 감지 - s3-chunking 개인화 처리")
-                        # 개인화 플래그 설정 (s3-chunking에서만)
+                    if any(keyword in question for keyword in card_keywords):
+                        print(f"💳 [vLLM {process_id}] 카드 관련 질의 감지 - 동적 처리")
+                        # 개인화 플래그 설정 (중요: MCP 성공 전에 미리 설정)
                         is_personalized = True
-                        print(f"✅ [vLLM {process_id}] 개인화 모드 활성화: {detected_user} 고객 (s3-chunking)")
-                    elif any(keyword in question for keyword in card_keywords) and chunking_type == "basic":
-                        print(f"📝 [vLLM {process_id}] 카드 관련 질의 감지 - s3 기본 모드 (txt파일만 읽기, 이미지 없음)")
-                        # s3 기본에서는 txt 파일만 읽어서 텍스트 정보만 표시
-                        is_personalized = True  # txt 파일 읽기 위해 개인화 활성화 (이미지 없이)
-                    
-                    # MCP 카드 분석 시스템 (개인화 활성화 시 실행)
-                    if is_personalized:
+                        print(f"✅ [vLLM {process_id}] 개인화 모드 활성화: {detected_user} 고객")
+                        
+                        # MCP 카드 분석 시스템 강화 (모든 청킹 타입에서 동작)
                         try:
                             print(f"🔍 [vLLM {process_id}] MCP 카드 분석 시스템 시작")
                             
-                            # DynamicCardAnalysisService로 통일 (청킹타입별 조건부 처리)
-                            from services.card_analysis_service_new import DynamicCardAnalysisService
-                            # 기존 벡터DB 매니저 전달 (rag_chain에서 가져오기)
-                            existing_vectorstore = getattr(rag_chain, 'dual_vectorstore_manager', None)
-                            dynamic_service = DynamicCardAnalysisService(existing_vectorstore)
+                            # CardAnalysisService 사용
+                            from services.card_analysis_service import CardAnalysisService
+                            card_service = CardAnalysisService()
                             
-                            # 청킹 타입별 카드 분석 및 이미지 처리
+                            # 김명정 카드 정보 분석
+                            analysis = card_service.analyze_customer_cards(detected_user)
+                            card_summary = card_service.format_analysis_response(analysis)
+                            
+                            print(f"📊 [vLLM {process_id}] 카드 분석 결과:")
+                            print(f"   - 보유 카드: {len(analysis.owned_cards)}장")
+                            print(f"   - 추천 카드: {len(analysis.recommended_cards)}장") 
+                            print(f"   - 발급 가능: {len(analysis.available_cards)}장")
+                            
+                            # 카드 이미지 정보 추가
                             owned_card_images = []
+                            for card in analysis.owned_cards:
+                                if '우리카드' in card.name:
+                                    owned_card_images.append('![\uc6b0\ub9ac\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.014.gif)')
+                                elif '하나카드' in card.name:
+                                    owned_card_images.append('![\ud558\ub098\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.016.gif)')
+                                elif 'NH카드' in card.name or '농협' in card.name:
+                                    owned_card_images.append('![\ub18d\ud611\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.017.gif)')
+                            
+                            # 발급 가능 카드 이미지
                             available_card_images = []
-                            process_image = ""
-                            card_summary = ""
+                            for card in analysis.available_cards + analysis.recommended_cards:
+                                if 'BC카드' in card.name:
+                                    available_card_images.append('![BC\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.004.gif)')
+                                elif '신한카드' in card.name:
+                                    available_card_images.append('![\uc2e0\ud55c\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.005.gif)')
+                                elif '국민카드' in card.name or 'KB' in card.name:
+                                    available_card_images.append('![\uad6d\ubbfc\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.006.jpeg)')
+                                elif '롯데카드' in card.name:
+                                    available_card_images.append('![\ub86f\ub370\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.007.jpeg)')
+                                elif '삼성카드' in card.name:
+                                    available_card_images.append('![\uc0bc\uc131\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.008.jpeg)')
                             
-                            if chunking_type == "custom":
-                                # s3-chunking: 카드 분석 + 이미지 포함
-                                print(f"🖼️ [vLLM {process_id}] s3-chunking: 이미지 포함 모드")
-                                
-                                # 동적 카드 분석 실행
-                                dynamic_analysis = dynamic_service.analyze_customer_cards(detected_user, "custom")
-                                card_summary = dynamic_service.format_analysis_response(dynamic_analysis)
-                                
-                                print(f"  🎯 동적분석: 보유 {len(dynamic_analysis.owned_cards)}, 가능 {len(dynamic_analysis.available_cards)}, 추천 {len(dynamic_analysis.recommended_cards)}")
-                                
-                                # 보유 카드 이미지 (실제 분석 결과 사용)
-                                for card in dynamic_analysis.owned_cards:
-                                    if card.image_path:
-                                        owned_card_images.append(f'![{card.name}](/images/{card.image_path})')
-                                        print(f"  📷 보유카드 이미지: {card.name} → {card.image_path}")
-                                
-                                # 발급 가능/추천 카드 이미지 (실제 분석 결과 사용)
-                                for card in dynamic_analysis.available_cards + dynamic_analysis.recommended_cards:
-                                    if card.image_path:
-                                        available_card_images.append(f'![{card.name}](/images/{card.image_path})')
-                                        print(f"  📷 발급가능카드 이미지: {card.name} → {card.image_path}")
-                                
-                                print(f"  🖼️ 최종 이미지: 보유카드 {len(owned_card_images)}개, 발급가능카드 {len(available_card_images)}개")
-                                
-                                # 카드 발급 절차 이미지
-                                process_image = '![카드발급 절차](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.013.gif)'
-                                
-                            else:  # s3 (basic) - 텍스트만, 이미지 없음
-                                print(f"📝 [vLLM {process_id}] s3기본: 텍스트 전용 모드 (이미지 없이 txt파일만)")
-                                
-                                # s3 기본에서도 txt 파일은 읽어서 텍스트 정보 표시
-                                dynamic_analysis = dynamic_service.analyze_customer_cards(detected_user, "basic")
-                                card_summary = dynamic_service.format_analysis_response(dynamic_analysis)
-                                
-                                print(f"  📄 텍스트분석: 보유 {len(dynamic_analysis.owned_cards)}, 가능 {len(dynamic_analysis.available_cards)}, 추천 {len(dynamic_analysis.recommended_cards)}")
-                                print(f"  📝 s3기본: 이미지 제외, 텍스트만 표시")
+                            # 카드 발급 절차 이미지
+                            process_image = '![\uce74\ub4dc\ubc1c\uae09 \uc808\ucc28](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.013.gif)'
                             
-                            # enhanced_question 생성 전 디버깅 로그
-                            print(f"🔍 [vLLM {process_id}] enhanced_question 생성:")
-                            print(f"  - card_summary 길이: {len(card_summary)}자")
-                            print(f"  - owned_card_images: {len(owned_card_images)}개")
-                            for i, img in enumerate(owned_card_images):
-                                print(f"    {i+1}. {img}")
-                            print(f"  - available_card_images: {len(available_card_images)}개")
-                            for i, img in enumerate(available_card_images[:3]):  # 상위 3개만
-                                print(f"    {i+1}. {img}")
-                            print(f"  - process_image: {len(process_image)}자")
-                            
-                            # 청킹 타입별 enhanced_question 구성
-                            if chunking_type == "basic":
-                                # s3 기본: 텍스트만, 이미지 섹션 완전 제거
-                                enhanced_question = f"""
+                            enhanced_question = f"""
 질문: {question}
 
 === {detected_user} 고객 카드 분석 결과 ===
 {card_summary}
 
-위 분석 결과를 바탕으로 {detected_user} 고객에게 BC카드 발급 안내를 제공해주세요.
-현재 보유하신 카드 정보를 포함하여 텍스트로만 안내해주세요.
-"""
-                            else:
-                                # s3-chunking: 카드명과 이미지 통합 표시  
-                                enhanced_question = f"""
-질문: {question}
-
-=== {detected_user} 고객 카드 분석 결과 ===
-{card_summary}
-
-보유 카드 이미지:
+현재 보유하신 카드 이미지:
 {chr(10).join(owned_card_images) if owned_card_images else '보유한 카드가 없습니다.'}
 
-발급 가능 카드 이미지:
+발급 가능한 카드 이미지:
 {chr(10).join(available_card_images[:3])}
 
 카드 발급 절차:
 {process_image}
 
 위 분석 결과와 이미지를 바탕으로 {detected_user} 고객에게 맞춤형 카드 발급 안내를 제공해주세요.
-각 카드명 바로 아래에 해당 이미지를 표시해주세요.
+현재 보유하신 카드와 새로 발급 가능한 카드를 명확히 구분하여 안내해주세요.
+답변에 이미지를 포함하여 작성해주세요.
 """
                             print(f"✅ [vLLM {process_id}] MCP 개인화 질의 생성 완료: {len(enhanced_question)}자")
                             print(f"🎯 [vLLM {process_id}] 개인화 전용 프롬프트 사용 예정")
@@ -1188,27 +1148,9 @@ def vllm_dual_stream():
                     print(f"🤖 [vLLM {process_id}] 프롬프트 선택: is_personalized={is_personalized}, detected_user={detected_user}")
                     
                     if is_personalized and detected_user:
-                        # 청킹 타입별 개인화 프롬프트 분리
-                        if chunking_type == "basic":
-                            # s3 기본: 텍스트 전용 프롬프트
-                            print(f"📝 [vLLM {process_id}] {detected_user} 고객 s3 기본 텍스트 전용 프롬프트 사용")
-                            prompt = f"""당신은 BC카드 전문 상담사입니다. {detected_user} 고객에게 맞춤형 카드 발급 안내를 텍스트로만 제공하세요.
-                            
-=== {detected_user} 고객 개인화 정보 ===
-{enhanced_question}
-
-**답변 작성 가이드 (s3 기본 - 텍스트 전용):**
-1. **제목 표시**: "**1. 현재 보유 중인 카드**", "**2. BC카드 발급 안내**" 형식으로 굵게 표시
-2. 보유 카드는 "✅ 현재 보유중" 으로 표시  
-3. **이미지 사용 금지**: 이미지 마크다운은 절대 사용하지 마세요
-4. **텍스트만**: 카드명과 설명만 텍스트로 표시
-5. **간결한 구성**: 불필요한 설명 최소화
-
-답변:"""
-                        else:
-                            # s3-chunking: 이미지 포함 프롬프트
-                            print(f"🎆 [vLLM {process_id}] {detected_user} 고객 s3-chunking 이미지 포함 프롬프트 사용")
-                            prompt = f"""당신은 BC카드 전문 상담사입니다. {detected_user} 고객에게 맞춤형 카드 발급 안내를 제공하세요.
+                        # 개인화된 카드 발급 전용 프롬프트
+                        print(f"🎆 [vLLM {process_id}] {detected_user} 고객 전용 개인화 프롬프트 사용")
+                        prompt = f"""당신은 BC카드 전문 상담사입니다. {detected_user} 고객에게 맞춤형 카드 발급 안내를 제공하세요.
 
 === 제공된 자료 ===
 {context}
@@ -1217,30 +1159,16 @@ def vllm_dual_stream():
 {enhanced_question}
 
 **답변 작성 가이드:**
-1. **제목 표시 절대규칙**: "**1. 현재 보유 중인 카드**", "**2. 발급 추천 카드**" 형식으로 굵게 표시. ### 마크다운 헤더는 절대 사용하지 말고 반드시 **굵은 글씨**만 사용하세요.
+1. **제목 표시**: "**1. 현재 보유 중인 카드**", "**2. 발급 추천 카드**" 형식으로 굵게 표시 (### 마크다운 헤더 절대 사용 금지)
 2. 보유 카드는 "✅ 현재 보유중" 으로 표시
 3. 추천 카드는 "⭐ 발급 추천" 으로 표시  
 4. 발급 가능 카드는 "🆕 발급가능" 으로 표시
-5. **🖼️ 카드명과 이미지 통합 표시 필수**: 
-   - **형식**: "✅ 우리카드" 바로 다음 줄에 해당 이미지 마크다운 표시
-   - **예시**: ✅ 우리카드\n![우리카드](/images/Aspose.Words...014.gif)
-   - **금지**: 별도 "이미지" 섹션 생성 금지
-   - **전체 경로 사용**: `/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.XXX.gif`
+5. 이미지가 있는 경우 ![\uce74\ub4dc\uc774\ub984](\uc774\ubbf8\uc9c0\ud30c\uc77c) 형식으로 포함
 6. **실제 데이터만 사용**: 제공된 자료에 있는 내용만 사용하고, 없는 내용은 절대 임의로 생성하지 말 것
 7. BC카드 발급 절차는 제공된 자료에 있는 경우만 포함
-8. **마크다운 렌더링 최적화**: 
-   - 텍스트와 테이블 사이 공백 최소화 (한 줄 공백만 사용)
-   - 각 섹션 간 구분을 위해 적절한 줄바꿈 사용
-   - 불필요한 빈 줄 제거하여 컴팩트하게 구성
-9. **헤더 사용 금지**: ### 마크다운 헤더는 절대 사용하지 말고 **굵은 글씨**로만 제목 표시
-10. **구조화된 출력**: 번호가 있는 제목(**1. 제목**), 카드별 정보(• 이모지), 테이블 형태로 체계적 구성
-11. **허위정보 금지**: VIP 혜택, 특별 우대 등 제공된 자료에 없는 내용은 절대 언급하지 말 것
-
-**⚠️ 이미지 경로 절대 규칙**: 
-- ✅ 올바른 형식: ![우리카드](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.014.gif)
-- ❌ 잘못된 형식: ![우리카드](014.gif) ← 축약 경로 절대 금지
-- **반드시 `/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.XXX.gif` 전체 경로 사용**
-- **위에 제공된 이미지 마크다운을 정확히 그대로 복사해서 사용하세요**
+8. **가독성 개선**: 각 섹션 사이에 적절한 공백 포함하여 읽기 편하게 구성
+9. **중요**: 마크다운 ### 헤더 대신 **굵은 글씨**로 제목을 표시하여 웹에서 깔끔하게 보이도록 할 것
+10. **허위정보 금지**: VIP 혜택, 특별 우대 등 제공된 자료에 없는 내용은 절대 언급하지 말 것
 
 답변:"""
                     else:
