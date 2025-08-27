@@ -55,11 +55,30 @@ class DynamicCardAnalysisService:
         print(f"📄 txt 파일에서 보유 카드 {len(owned_cards)}장 읽음")
         
         if chunking_type == "basic":
-            # s3 기본: 텍스트만, 이미지 없음 - 간단한 더미 데이터
-            print(f"📝 s3 기본 모드: 이미지 추출 생략, 텍스트만 처리")
+            # s3 기본: 텍스트만, 이미지 없음 - 하지만 카드 목록은 제공
+            print(f"📝 s3 기본 모드: 이미지 없이 텍스트만 처리")
+            
+            # 벡터DB에서 카드 목록만 가져오기 (이미지 제외)
+            all_available_cards, _ = self._extract_cards_from_vectordb("custom")  # custom에서 카드 목록만 가져오기
+            print(f"📋 s3 기본: {len(all_available_cards)}개 카드 목록 확인")
+            
+            # 차집합 계산 (전체 - 보유 = 미보유)
+            owned_card_names = {card.name for card in owned_cards}
             available_cards = []
             recommended_cards = []
-            # 보유 카드는 이미지 없이 그대로 사용
+            
+            for card_name in all_available_cards:
+                if card_name not in owned_card_names:
+                    card_info = CardInfo(
+                        name=card_name,
+                        bank=card_name.replace('카드', ''),
+                        status="발급가능",
+                        image_path=None  # s3 기본에서는 이미지 없음
+                    )
+                    
+                    # 모든 카드를 발급 가능으로 분류 (BC카드 특별 분류 제거)
+                    available_cards.append(card_info)
+                    print(f"  📋 s3기본 발급가능: {card_name} (이미지 없음)")
             
         else:
             # s3-chunking: 벡터DB에서 전체 카드 목록 + 이미지 정보 추출
@@ -83,13 +102,9 @@ class DynamicCardAnalysisService:
                         image_path=image_path
                     )
                     
-                    # BC카드는 추천으로 분류
-                    if 'BC' in card_name:
-                        card_info.status = "발급추천"
-                        card_info.recommendation_reason = "BC카드 전문 상담 서비스"
-                        recommended_cards.append(card_info)
-                    else:
-                        available_cards.append(card_info)
+                    # 모든 카드를 발급 가능으로 분류 (BC카드 특별 분류 제거)
+                    available_cards.append(card_info)
+                    print(f"  📋 발급가능카드 추가: {card_name} (이미지: {image_path or '없음'})")
             
             # 보유 카드에 이미지 추가 (s3-chunking만)
             for card in owned_cards:
@@ -197,6 +212,15 @@ class DynamicCardAnalysisService:
             # 2. 이미지 정보 추출 (s3-chunking인 경우만, ChromaDB 직접 접근)
             if chunking_type == "custom":
                 card_images = self._extract_card_images_directly()
+                
+                # 실제 MD 파일에 있는 카드만 사용 (이미지가 있는 카드만)
+                print(f"  📋 벡터DB 텍스트 검색: {len(all_cards)}개 카드")
+                print(f"  📋 MD 파일 이미지: {len(card_images)}개 카드")
+                
+                # 이미지가 있는 카드만 최종 목록에 포함
+                available_image_cards = set(card_images.keys())
+                all_cards = available_image_cards  # MD 파일 기준으로 대체
+                print(f"  ✅ 최종 사용: {len(all_cards)}개 카드 (이미지 기준)")
                                 
             return list(all_cards), card_images
             
@@ -250,21 +274,22 @@ class DynamicCardAnalysisService:
     def _normalize_card_name(self, alt_text: str) -> Optional[str]:
         """이미지 alt 텍스트에서 카드명 추출 및 정규화"""
         card_mappings = {
+            # MD 파일의 정확한 alt 텍스트 기준으로 매핑
             '우리카드': '우리카드',
-            '하나카드': '하나카드',
+            'Standard Chartered SC제일은행': 'SC제일은행',  # MD 파일의 정확한 텍스트
+            '하나카드': '하나카드', 
             'NH농협카드': 'NH농협카드',
             '농협카드': 'NH농협카드',
-            'SC제일은행': 'SC제일은행',
             'IBK기업은행': 'IBK기업은행',
             'KB국민카드': 'KB국민카드',
             '국민카드': 'KB국민카드',
             'DGB대구은행': 'DGB대구은행',
             'BNK부산은행': 'BNK부산은행',
             'BNK경남은행': 'BNK경남은행',
-            'citi은행': '씨티은행',
+            'citi은행': '씨티은행',  # MD 파일의 정확한 텍스트
             '씨티은행': '씨티은행',
             '신한카드': '신한카드',
-            'BC바로카드': 'BC바로카드'
+            'BC 바로카드': 'BC바로카드'  # MD 파일에는 공백 포함
         }
         
         for key, value in card_mappings.items():
@@ -274,15 +299,37 @@ class DynamicCardAnalysisService:
     
     def _find_card_image(self, card_name: str, card_images: Dict[str, str]) -> Optional[str]:
         """카드명에 해당하는 이미지 경로 찾기"""
-        # 직접 매칭
+        # 1. 직접 매칭
         if card_name in card_images:
             return card_images[card_name]
         
-        # 부분 매칭
+        # 2. 특별한 매칭 규칙 적용 
+        special_mappings = {
+            'BC카드': None,  # BC카드는 MD 파일에 이미지가 없음
+            'BC바로카드': 'BC바로카드',  # MD에서는 'BC 바로카드'
+            'SC제일은행': 'SC제일은행',  # MD에서는 'Standard Chartered SC제일은행'
+            '씨티은행': '씨티은행',      # MD에서는 'citi은행'
+            # '국민카드': 'KB국민카드'   # 중복 방지를 위해 제거 - KB국민카드가 우선
+        }
+        
+        if card_name in special_mappings:
+            mapped_name = special_mappings[card_name]
+            if mapped_name and mapped_name in card_images:
+                return card_images[mapped_name]
+            elif mapped_name is None:
+                return None  # 해당 카드는 이미지가 없음
+        
+        # 3. 부분 매칭 (키워드 기반)
         for image_card_name, image_path in card_images.items():
             if card_name in image_card_name or image_card_name in card_name:
                 return image_path
-                
+        
+        # 4. 더 관대한 매칭
+        if '바로카드' in card_name:
+            for image_card_name, image_path in card_images.items():
+                if 'BC' in image_card_name and '바로' in image_card_name:
+                    return image_path
+                    
         return None
     
     def _extract_issue_date(self, line: str) -> Optional[str]:

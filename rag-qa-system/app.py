@@ -25,6 +25,32 @@ def serve_static_images(filename):
     """정적 이미지 파일 서빙 (추가 방법)"""
     return send_from_directory(s3_chunking_static_path, filename)
 
+# /images/ 경로로도 이미지 서비스 (HTML에서 사용하는 경로)
+@app.route('/images/<path:filename>')
+def serve_images(filename):
+    """s3-chunking 폴더의 이미지 파일 서비스"""
+    try:
+        file_path = os.path.join(s3_chunking_static_path, filename)
+        if os.path.exists(file_path):
+            print(f"✅ 이미지 서비스: {filename}")
+            response = send_from_directory(s3_chunking_static_path, filename)
+            # CORS 및 캐시 헤더 추가
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Cache-Control'] = 'public, max-age=86400'  # 24시간 캐시
+            response.headers['Expires'] = 'Thu, 31 Dec 2025 23:59:59 GMT'
+            # 압축 지원
+            if filename.endswith('.gif'):
+                response.headers['Content-Type'] = 'image/gif'
+                # GIF 미리 로드 힌트 추가
+                response.headers['Link'] = '<{}>; rel=prefetch'.format(f'/images/{filename}')
+            return response
+        else:
+            print(f"❌ 이미지 파일 없음: {filename}")
+            return jsonify({"error": f"Image not found: {filename}"}), 404
+    except Exception as e:
+        print(f"❌ 이미지 서비스 오류: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # Initialize Flask-RESTX for Swagger
 api = Api(
     app,

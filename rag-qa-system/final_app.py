@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_restx import Api, Resource, fields
 from flask_cors import CORS
 import os
@@ -452,6 +452,28 @@ def health():
         "documents_loaded": DOCUMENT_STATUS['loaded'],
         "timestamp": datetime.now().isoformat()
     })
+
+# 이미지 서비스를 위한 라우트
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    """s3-chunking 폴더의 이미지 파일 서비스"""
+    image_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3-chunking')
+    try:
+        # 이미지 파일 존재 확인
+        file_path = os.path.join(image_directory, filename)
+        if os.path.exists(file_path):
+            print(f"✅ 이미지 서비스: {filename}")
+            response = send_from_directory(image_directory, filename)
+            # CORS 헤더 추가
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+            return response
+        else:
+            print(f"❌ 이미지 파일 없음: {filename}")
+            return jsonify({"error": f"Image not found: {filename}"}), 404
+    except Exception as e:
+        print(f"❌ 이미지 서비스 오류: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Ensure data directories exist

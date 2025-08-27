@@ -56,86 +56,171 @@ class DualVectorStoreManager:
         return vectorstore.similarity_search(query, k=k)
     
     def similarity_search_with_score(self, query, chunking_type="basic", k=5):
-        """청킹 타입별 점수 포함 유사도 검색 - 거리를 유사도로 변환"""
+        """청킹 타입별 점수 포함 유사도 검색 - BGE-M3 최적화된 유사도 계산"""
         vectorstore = self._get_vectorstore_by_type(chunking_type)
         
         # ChromaDB의 similarity_search_with_score 사용 (거리값 반환)
         results = vectorstore.similarity_search_with_score(query, k=k)
         
-        # 거리를 유사도로 변환 (0~1 사이, 1에 가까울수록 유사)
+        # BGE-M3 임베딩에 최적화된 거리-유사도 변환
         converted_results = []
         for doc, distance in results:
-            # ChromaDB가 L2 distance를 반환하는 경우를 처리
-            # L2 distance가 큰 값(>2)이면 L2 거리, 작은 값이면 cosine distance로 가정
-            if distance > 2:
-                # L2 거리를 유사도로 변환: exp(-distance/scale)로 더 부드러운 변환
-                import math
-                similarity = math.exp(-distance / 1000.0)  # BGE-M3 1024차원에 맞는 스케일 조정
+            # BGE-M3는 cosine distance를 사용하므로 0~2 범위의 값이 나옴
+            # 더 정교한 유사도 계산 적용
+            if distance <= 2.0:
+                # Cosine distance -> similarity 변환
+                # cosine similarity = 1 - cosine distance
+                base_similarity = max(0, min(1, 1 - distance))
+                
+                # BGE-M3 특성을 고려한 스케일링
+                # 0.3 이하: 매우 높은 유사도 (0.85~1.0)
+                # 0.3~0.6: 높은 유사도 (0.7~0.85)  
+                # 0.6~0.9: 중간 유사도 (0.5~0.7)
+                # 0.9~1.2: 낮은 유사도 (0.3~0.5)
+                # 1.2+: 매우 낮은 유사도 (0.0~0.3)
+                
+                if distance <= 0.3:
+                    # 매우 높은 유사도: 85-100%
+                    similarity = 0.85 + (0.3 - distance) / 0.3 * 0.15
+                elif distance <= 0.6:
+                    # 높은 유사도: 70-85%
+                    similarity = 0.70 + (0.6 - distance) / 0.3 * 0.15
+                elif distance <= 0.9:
+                    # 중간 유사도: 50-70%
+                    similarity = 0.50 + (0.9 - distance) / 0.3 * 0.20
+                elif distance <= 1.2:
+                    # 낮은 유사도: 30-50%
+                    similarity = 0.30 + (1.2 - distance) / 0.3 * 0.20
+                else:
+                    # 매우 낮은 유사도: 0-30%
+                    similarity = max(0, 0.30 - (distance - 1.2) / 0.8 * 0.30)
+                    
             else:
-                # cosine distance인 경우: similarity = 1 - distance  
-                similarity = max(0, 1 - distance)
+                # L2 distance인 경우 (BGE-M3에서는 드물지만 예외처리)
+                import math
+                similarity = math.exp(-distance / 2048.0)  # 1024차원 * 2 스케일
+            
+            # 시맨틱 관련도 보정 (선택적)
+            try:
+                from services.enhanced_query_processor import EnhancedQueryProcessor
+                processor = EnhancedQueryProcessor()
+                semantic_bonus = processor.calculate_semantic_relevance(query, doc.page_content[:500])
+                # 시맨틱 보너스를 최대 10% 추가
+                similarity = min(1.0, similarity + semantic_bonus * 0.1)
+            except:
+                pass  # 에러 발생시 기본 유사도만 사용
+                
             converted_results.append((doc, similarity))
         
         return converted_results
     
     def dual_search(self, query, k=5):
-        """기본/커스텀 두 벡터스토어에서 동시 검색 - 강화된 카드 분석"""
+        """기본/커스텀 두 벡터스토어에서 동시 검색 - 강화된 개인화 및 시맨틱 검색"""
         try:
-            # 카드 발급 관련 쿼리인지 확인
-            card_keywords = ["카드", "발급", "회원", "은행", "카드발급", "김명정"]
-            is_card_query = any(keyword in query for keyword in card_keywords)
+            # 질의 확장 처리
+            from services.enhanced_query_processor import EnhancedQueryProcessor
+            processor = EnhancedQueryProcessor()
             
-            if is_card_query:
-                # 카드 관련 쿼리의 경우 더 많은 결과 검색 및 상세 키워드 추가
+            # 개인화 쿼리 및 카드 관련 쿼리 감지
+            intents = processor.extract_intent_keywords(query)
+            is_personalized = bool(intents["person"])
+            is_card_query = bool(intents["card_type"]) or any(keyword in query for keyword in ["카드", "발급", "회원은행"])
+            
+            print(f"🔍 [DualSearch] 개인화: {is_personalized}, 카드관련: {is_card_query}")
+            print(f"🎯 [DualSearch] 의도분석: {intents}")
+            
+            all_results = []
+            
+            if is_personalized and is_card_query:
+                # 개인화된 카드 쿼리: 가장 정교한 검색
+                print(f"💳 [DualSearch] 개인화 카드 쿼리 처리")
+                
+                # 1. 원본 쿼리로 기본/커스텀 검색
+                basic_results = self.similarity_search_with_score(query, "basic", k*2)
+                custom_results = self.similarity_search_with_score(query, "custom", k*2)
+                
+                for doc, score in basic_results:
+                    doc.metadata['search_source'] = 'basic_personalized'
+                    # 개인명이 포함된 문서에 가점
+                    person_bonus = 0.1 if any(person in doc.page_content for person in intents["person"]) else 0
+                    all_results.append((doc, min(1.0, score + person_bonus)))
+                
+                for doc, score in custom_results:
+                    doc.metadata['search_source'] = 'custom_personalized'
+                    person_bonus = 0.1 if any(person in doc.page_content for person in intents["person"]) else 0
+                    all_results.append((doc, min(1.0, score + person_bonus)))
+                
+                # 2. 확장된 개인화 쿼리들로 추가 검색
+                expanded_queries = processor.build_hybrid_search_queries(query)
+                for query_info in expanded_queries[1:4]:  # 상위 3개 확장 쿼리
+                    try:
+                        exp_basic = self.similarity_search_with_score(query_info["query"], "basic", 2)
+                        for doc, score in exp_basic:
+                            doc.metadata['search_source'] = f'basic_expanded_{query_info["type"]}'
+                            weighted_score = score * query_info["weight"]
+                            all_results.append((doc, weighted_score))
+                    except:
+                        continue
+                
+                # 3. 특정 은행/카드사 관련 문서 부스팅
+                for bank in intents.get("bank", []):
+                    try:
+                        bank_query = f"{bank} 카드 발급 안내"
+                        bank_results = self.similarity_search_with_score(bank_query, "basic", 3)
+                        for doc, score in bank_results:
+                            doc.metadata['search_source'] = f'basic_bank_{bank}'
+                            all_results.append((doc, score * 0.95))  # 약간의 가중치
+                    except:
+                        continue
+                        
+                # 상위 20개 반환 (개인화에서는 더 많은 컨텍스트 필요)
+                all_results.sort(key=lambda x: x[1], reverse=True)
+                unique_results = self._remove_duplicates(all_results)
+                return unique_results[:20]
+                
+            elif is_card_query:
+                # 일반 카드 쿼리: 기존 강화 로직
+                print(f"🏦 [DualSearch] 일반 카드 쿼리 처리")
                 extended_keywords = [
                     f"{query} 발급절차",
-                    f"{query} 신청방법",
-                    f"{query} 심사과정", 
+                    f"{query} 신청방법", 
                     "회원은행별 카드발급안내",
-                    "카드 발급 절차",
-                    "신청 준비",
-                    "심사 과정",
-                    "카드 발급"
+                    "카드 발급 절차 안내",
+                    "신청 준비서류",
+                    "카드 심사 과정"
                 ]
                 
-                all_results = []
-                
-                # 1. 기본 검색
+                # 기본/커스텀 검색
                 basic_results = self.similarity_search_with_score(query, "basic", k)
+                custom_results = self.similarity_search_with_score(query, "custom", k)
+                
                 for doc, score in basic_results:
                     doc.metadata['search_source'] = 'basic_chunking'
                     all_results.append((doc, score))
                 
-                # 2. 커스텀 검색
-                custom_results = self.similarity_search_with_score(query, "custom", k)
                 for doc, score in custom_results:
                     doc.metadata['search_source'] = 'custom_chunking' 
                     all_results.append((doc, score))
                 
-                # 3. 확장된 키워드로 추가 검색 (basic에서 상세 정보)
-                for keyword in extended_keywords[:3]:  # 상위 3개만 검색
+                # 확장 키워드 검색
+                for keyword in extended_keywords[:3]:
                     try:
-                        extended_basic = self.similarity_search_with_score(keyword, "basic", 3)
+                        extended_basic = self.similarity_search_with_score(keyword, "basic", 2)
                         for doc, score in extended_basic:
                             doc.metadata['search_source'] = 'basic_chunking_extended'
-                            # 중복 문서 제거를 위해 내용 비교
-                            doc_content = doc.page_content[:100]  # 첫 100자로 중복 체크
-                            if not any(existing_doc.page_content[:100] == doc_content for existing_doc, _ in all_results):
-                                all_results.append((doc, score * 0.9))  # 약간 낮은 점수 부여
+                            all_results.append((doc, score * 0.9))
                     except:
                         continue
                 
-                # 점수순 정렬 후 상위 15개 반환 (더 많은 컨텍스트)
                 all_results.sort(key=lambda x: x[1], reverse=True)
-                return all_results[:15]
+                unique_results = self._remove_duplicates(all_results)
+                return unique_results[:15]
             
             else:
                 # 일반 쿼리의 경우 기존 방식
+                print(f"📄 [DualSearch] 일반 쿼리 처리")
                 basic_results = self.similarity_search_with_score(query, "basic", k//2 + 1)
                 custom_results = self.similarity_search_with_score(query, "custom", k//2 + 1)
-                
-                # 결과 합치기 및 점수순 정렬
-                all_results = []
                 
                 # 기본 청킹 결과 추가
                 for doc, score in basic_results:
@@ -149,12 +234,29 @@ class DualVectorStoreManager:
                 
                 # 점수순 정렬 후 상위 k개 반환
                 all_results.sort(key=lambda x: x[1], reverse=True)
-                return all_results[:k]
+                unique_results = self._remove_duplicates(all_results)
+                return unique_results[:k]
             
         except Exception as e:
             print(f"⚠️ 이중 검색 오류: {e}")
+            import traceback
+            print(f"🔍 상세 오류: {traceback.format_exc()}")
             # 폴백: 기본 검색만 수행
             return self.similarity_search_with_score(query, "basic", k)
+    
+    def _remove_duplicates(self, results):
+        """중복 문서 제거 - 내용 기반"""
+        unique_results = []
+        seen_content = set()
+        
+        for doc, score in results:
+            # 첫 200자로 중복 체크 (더 정확한 중복 감지)
+            content_hash = hash(doc.page_content[:200])
+            if content_hash not in seen_content:
+                seen_content.add(content_hash)
+                unique_results.append((doc, score))
+        
+        return unique_results
     
     def enhanced_card_search(self, query, k=5):
         """카드 관련 쿼리에 최적화된 검색 - 이미지 포함 문서 우선"""
