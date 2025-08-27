@@ -22,13 +22,15 @@ def load_s3_documents(clear_before_load=False):
     import platform
     if platform.system() == "Windows":
         s3_folders = {
-            "s3": "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\s3",
-            "s3-chunking": "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\s3-chunking"
+            "s3": "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3",
+            "s3-chunking": "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3-chunking",
+            "s3-common": "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3-common"
         }
     else:
         s3_folders = {
-            "s3": "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/s3",
-            "s3-chunking": "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/s3-chunking"
+            "s3": "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system/s3",
+            "s3-chunking": "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system/s3-chunking",
+            "s3-common": "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system/s3-common"
         }
     
     # 컴포넌트 초기화
@@ -107,6 +109,23 @@ def load_s3_documents(clear_before_load=False):
                             vectorstore_manager.add_documents(basic_chunks, chunking_type="basic")
                             total_chunks += len(basic_chunks)
                             print(f"✅ s3 성공: 기본청킹 {len(basic_chunks)}개 청크를 basic 컬렉션에 저장")
+                            
+                        elif folder_type == "s3-common":
+                            # s3-common 폴더: 공통 데이터로 양쪽 컬렉션에 모두 저장
+                            print(f"🔄 공통 파일 처리: {file}")
+                            
+                            # 기본 청킹으로 basic 컬렉션에 저장
+                            basic_result = doc_processor.process_file(file_path, {**metadata, "source": "s3-common"}, chunking_strategy="basic")
+                            basic_chunks = basic_result["chunks"]
+                            vectorstore_manager.add_documents(basic_chunks, chunking_type="basic")
+                            
+                            # 커스텀 청킹으로 custom 컬렉션에도 저장
+                            custom_result = doc_processor.process_file(file_path, {**metadata, "source": "s3-common"}, chunking_strategy="custom")
+                            custom_chunks = custom_result["chunks"]
+                            vectorstore_manager.add_documents(custom_chunks, chunking_type="custom")
+                            
+                            total_chunks += len(basic_chunks) + len(custom_chunks)
+                            print(f"✅ s3-common 성공: 기본청킹 {len(basic_chunks)}개 + 커스텀청킹 {len(custom_chunks)}개 청크를 양쪽 컬렉션에 저장")
                             
                         elif folder_type == "s3-chunking":
                             # s3-chunking 폴더: 커스텀 청킹으로 custom 컬렉션에 저장

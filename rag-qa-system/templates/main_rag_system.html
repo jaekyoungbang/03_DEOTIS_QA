@@ -1872,14 +1872,52 @@
             }
         }
         
+        // 카드명 추출 함수 (실제 MD 파일의 이미지 alt 텍스트 기반)
+        function extractCardNameFromAlt(altText) {
+            if (!altText) return '';
+            
+            // 실제 MD 파일에 있는 카드명 패턴 매칭
+            const cardPatterns = {
+                '우리카드': ['우리카드', 'woori'],
+                '하나카드': ['하나카드', 'hana'], 
+                '농협카드': ['NH농협카드', '농협', 'NH', 'nh'],
+                'SC제일은행': ['Standard Chartered', 'SC제일은행', 'SC'],
+                '기업은행': ['IBK기업은행', 'IBK', '기업은행'],
+                '국민카드': ['KB국민카드', 'KB', '국민'],
+                '대구은행': ['DGB대구은행', 'DGB', '대구'],
+                '부산은행': ['BNK부산은행', 'BNK부산', '부산'],
+                '경남은행': ['BNK경남은행', 'BNK경남', '경남'],
+                '씨티은행': ['citi은행', 'citi', 'Citi'],
+                '신한카드': ['신한카드', 'shinhan', 'Shinhan'],
+                'BC카드': ['BC 바로카드', 'BC', 'bc', '바로카드']
+            };
+            
+            for (const [cardName, patterns] of Object.entries(cardPatterns)) {
+                if (patterns.some(pattern => altText.includes(pattern))) {
+                    return cardName;
+                }
+            }
+            return altText;
+        }
+        
         // 텍스트 포맷팅 함수
         function formatText(text) {
             if (!text) return '';
             
             console.log('🔧 formatText input:', text.substring(0, 200) + '...');
             
-            // 먼저 <think> 태그와 내용 제거 (닫는 태그가 있는 경우)
-            let formatted = text.replace(/<think>[\s\S]*?<\/think>/g, '');
+            // 1단계: 이미지 마크다운을 보호하기 위해 임시 플레이스홀더로 대체
+            const imageProtectionMap = new Map();
+            let imageCounter = 0;
+            let formatted = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+                const placeholder = `__IMAGE_PLACEHOLDER_${imageCounter}__`;
+                imageProtectionMap.set(placeholder, match);
+                imageCounter++;
+                return placeholder;
+            });
+            
+            // 2단계: <think> 태그와 내용 제거 (닫는 태그가 있는 경우)
+            formatted = formatted.replace(/<think>[\s\S]*?<\/think>/g, '');
             
             // <think>로 시작하는 부분이 남아있으면 끝까지 제거 (닫는 태그가 없는 경우 대비)
             formatted = formatted.replace(/<think>[\s\S]*$/g, '');
@@ -1966,6 +2004,51 @@
                 });
             }
             
+            // 김명정 고객의 카드 보유 여부에 따른 이미지 분류 표시
+            formatted = formatted.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, altText, imagePath) => {
+                // Aspose.Words로 생성된 이미지만 처리
+                if (imagePath.startsWith('Aspose.Words.')) {
+                    // 김명정 고객 보유 카드 확인 (실제 이미지 alt 텍스트와 매칭)
+                    const userOwnedCards = ['우리카드', '하나카드', '농협카드'];
+                    const cardName = extractCardNameFromAlt(altText);
+                    console.log('🔍 카드명 추출:', altText, '→', cardName);
+                    
+                    const isOwnedCard = userOwnedCards.some(owned => {
+                        // 더 정확한 매칭을 위해 다양한 패턴 확인
+                        if (owned === '우리카드' && (altText.includes('우리') || cardName.includes('우리'))) return true;
+                        if (owned === '하나카드' && (altText.includes('하나') || cardName.includes('하나'))) return true;
+                        if (owned === '농협카드' && (altText.includes('NH') || altText.includes('농협') || cardName.includes('농협'))) return true;
+                        return false;
+                    });
+                    
+                    const cardStatus = isOwnedCard ? 
+                        `<div style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-top: 5px;">
+                            ✅ 보유 카드
+                        </div>` :
+                        `<div style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; margin-top: 5px;">
+                            ⭐ 발급 추천 카드
+                        </div>`;
+                    
+                    return `<div style="margin: 15px 0; text-align: center; border: ${isOwnedCard ? '2px solid #28a745' : '2px solid #ffc107'}; padding: 10px; border-radius: 12px;">
+                        <img src="/images/${imagePath}" 
+                             alt="${altText}" 
+                             style="max-width: 200px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                             onerror="console.error('이미지 로드 실패:', '/images/${imagePath}'); this.style.display='none'; this.nextElementSibling.style.display='block';" 
+                             onload="console.log('이미지 로드 성공:', '/images/${imagePath}');" />
+                        <div style="display: none; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;">
+                            ❌ 이미지 로드 실패<br>
+                            📷 파일: ${imagePath}<br>
+                            🏷️ 설명: ${altText}
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.9em; color: #333;">
+                            ${altText}
+                        </div>
+                        ${cardStatus}
+                    </div>`;
+                }
+                return match; // 다른 이미지는 원본 유지
+            });
+            
             // 기본 텍스트 포맷팅
             formatted = formatted
                 // 테이블 구분선 제거 (독립적인 라인의 ---, ===, ... 패턴)
@@ -1987,6 +2070,14 @@
                 .replace(/\*\*([^*]+)\*\*:/g, '<div style="margin: 15px 0 8px 0; font-weight: 700; font-size: 1.1em; color: #2c3e50; border-bottom: 2px solid #e9ecef; padding-bottom: 4px;">$1:</div>')
                 // 줄바꿈을 <br>로 변환 (테이블 제외)
                 .replace(/\n/g, '<br>');
+            
+            // 마지막 단계: 보호된 이미지 마크다운을 HTML로 변환하여 복원
+            imageProtectionMap.forEach((originalImage, placeholder) => {
+                // 마크다운 이미지를 HTML로 변환
+                const htmlImage = originalImage.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, 
+                    '<img src="$2" alt="$1" style="max-width: 200px; height: auto; margin: 8px 0; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" onerror="console.error(\'이미지 로드 실패:\', \'$2\'); this.style.display=\'none\';" onload="console.log(\'이미지 로드 성공:\', \'$2\');" />');
+                formatted = formatted.replace(placeholder, htmlImage);
+            });
             
             console.log('🔧 formatText output:', formatted.substring(0, 500) + '...');
             return formatted;
@@ -3149,21 +3240,22 @@
                 cardBody.classList.add('loading');
                 
                 const timestamp = processCard.id.split('-').pop();
-                // waiting 내용을 loading 내용으로 전환
+                // waiting 내용을 loading 내용으로 전환 (0초부터 시작)
                 cardBody.innerHTML = `
                     <div class="loading-container">
                         <div class="process-loading-spinner"></div>
                         <div class="loading-progress" style="margin-top: 15px; font-weight: 500; color: #495057;">
                             ⏳ AI가 문서를 검색중입니다...
                         </div>
-                        <div class="loading-timer" id="timer-${mode}-${timestamp}" style="color: #6c757d; font-size: 0.85rem; margin-top: 8px;">0초 경과</div>
+                        <div class="loading-timer" id="timer-${mode}-${timestamp}" style="color: #6c757d; font-size: 0.85rem; margin-top: 8px;">0.0초 경과</div>
                         <div class="loading-dots" style="margin-top: 10px; color: #667eea;">
                             <span>●</span><span>●</span><span>●</span>
                         </div>
                     </div>
                 `;
                 
-                // Phase 2 타이머 시작
+                // Phase 2 타이머 0초부터 시작
+                console.log(`⏰ [PHASE 2] ${mode} 타이머 0초부터 시작`);
                 startProcessTimer(mode, timestamp);
             }
             

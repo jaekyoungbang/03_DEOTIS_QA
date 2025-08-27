@@ -18,13 +18,67 @@ class VectorStoreManager:
         # Create persist directory if it doesn't exist
         os.makedirs(self.persist_directory, exist_ok=True)
         
-        # Initialize ChromaDB with persistent storage
-        self.vectorstore = Chroma(
-            collection_name=self.collection_name,
-            embedding_function=self.embedding_function,
-            persist_directory=self.persist_directory,
-            collection_metadata={"hnsw:space": "cosine"}
-        )
+        # ChromaDB 강력한 호환성 해결
+        try:
+            # 먼저 완전히 깨끗한 환경에서 시작
+            if os.path.exists(self.persist_directory):
+                import shutil
+                shutil.rmtree(self.persist_directory, ignore_errors=True)
+                print(f"🗑️ 기존 ChromaDB 완전 삭제")
+            
+            # 새 디렉토리 생성
+            os.makedirs(self.persist_directory, exist_ok=True)
+            
+            # ChromaDB 초기화 (가장 기본적인 설정으로)
+            self.vectorstore = Chroma(
+                collection_name=self.collection_name,
+                embedding_function=self.embedding_function,
+                persist_directory=self.persist_directory
+            )
+            print(f"✅ ChromaDB 새로 생성 완료: {self.collection_name}")
+        except Exception as e:
+            print(f"⚠️ ChromaDB 초기화 오류: {e}")
+            # 기존 벡터DB 완전 삭제 후 재생성
+            try:
+                if os.path.exists(self.persist_directory):
+                    import shutil
+                    import time
+                    # Windows 파일 잠금 해제를 위해 잠시 대기
+                    time.sleep(1)
+                    
+                    # 강제 삭제 시도 (Windows 호환)
+                    try:
+                        shutil.rmtree(self.persist_directory, ignore_errors=True)
+                        time.sleep(0.5)  # 삭제 완료 대기
+                        print(f"🗑️ 기존 벡터DB 완전 삭제: {self.persist_directory}")
+                    except Exception as delete_err:
+                        # 삭제 실패시 고유한 디렉토리명 사용
+                        print(f"⚠️ 삭제 실패, 새 디렉토리 사용: {delete_err}")
+                        self.persist_directory = f"./data/vectordb_{int(time.time())}"
+                        print(f"📁 새 디렉토리: {self.persist_directory}")
+                
+                # 새 디렉토리 생성
+                os.makedirs(self.persist_directory, exist_ok=True)
+                print(f"📁 새 벡터DB 디렉토리 생성")
+                
+                # 다시 시도 (메타데이터 없이)
+                self.vectorstore = Chroma(
+                    collection_name=self.collection_name,
+                    embedding_function=self.embedding_function,
+                    persist_directory=self.persist_directory
+                )
+                print("✅ ChromaDB 재생성 완료")
+                
+            except Exception as retry_error:
+                print(f"❌ ChromaDB 재생성 실패: {retry_error}")
+                # 최후의 수단: 고유한 컬렉션명 사용
+                self.collection_name = f"{self.collection_name}_{uuid.uuid4().hex[:8]}"
+                self.vectorstore = Chroma(
+                    collection_name=self.collection_name,
+                    embedding_function=self.embedding_function,
+                    persist_directory=self.persist_directory
+                )
+                print(f"✅ 고유 컬렉션명으로 생성: {self.collection_name}")
     
     def add_documents(self, documents, ids=None):
         """Add documents to the vector store"""
@@ -41,8 +95,26 @@ class VectorStoreManager:
         return self.vectorstore.similarity_search(query, k=k)
     
     def similarity_search_with_score(self, query, k=5):
-        """Perform similarity search with relevance scores"""
-        return self.vectorstore.similarity_search_with_relevance_scores(query, k=k)
+        """Perform similarity search with distance scores (0=perfect match, higher=less similar)"""
+        # ChromaDB의 similarity_search_with_score는 거리값(낮을수록 유사)을 반환
+        # similarity_search_with_relevance_scores는 음수값을 반환하므로 사용하지 않음
+        results = self.vectorstore.similarity_search_with_score(query, k=k)
+        
+        # 거리를 유사도로 변환 (0~1 사이, 1에 가까울수록 유사)
+        converted_results = []
+        for doc, distance in results:
+            # ChromaDB가 L2 distance를 반환하는 경우를 처리
+            # L2 distance가 큰 값(>2)이면 L2 거리, 작은 값이면 cosine distance로 가정
+            if distance > 2:
+                # L2 거리를 유사도로 변환: exp(-distance/scale)로 더 부드러운 변환
+                import math
+                similarity = math.exp(-distance / 100.0)  # 스케일 조정으로 더 의미있는 범위
+            else:
+                # cosine distance인 경우: similarity = 1 - distance  
+                similarity = max(0, 1 - distance)
+            converted_results.append((doc, similarity))
+        
+        return converted_results
     
     def delete_collection(self, clear_cache=True):
         """Delete the entire collection and reinitialize"""
@@ -94,24 +166,83 @@ class DualVectorStoreManager:
         self.initialize_vectorstores()
     
     def initialize_vectorstores(self):
-        """기본/커스텀 벡터스토어 초기화"""
+        """기본/커스텀 벡터스토어 초기화 - 완전 새로 시작"""
+        # ChromaDB 완전 새로 시작 (호환성 보장)
+        if os.path.exists(self.persist_directory):
+            import shutil
+            shutil.rmtree(self.persist_directory, ignore_errors=True)
+            print(f"🗑️ 기존 DualVectorStore 완전 삭제")
+        
+        # 새 디렉토리 생성
         os.makedirs(self.persist_directory, exist_ok=True)
         
-        # 기본 청킹용 벡터스토어
-        self.basic_vectorstore = Chroma(
-            collection_name=self.basic_collection_name,
-            embedding_function=self.embedding_function,
-            persist_directory=self.persist_directory,
-            collection_metadata={"hnsw:space": "cosine", "chunking_type": "basic"}
-        )
+        # 기본 청킹용 벡터스토어 (완전 새로 생성)
+        try:
+            self.basic_vectorstore = Chroma(
+                collection_name=self.basic_collection_name,
+                embedding_function=self.embedding_function,
+                persist_directory=self.persist_directory
+            )
+            print(f"✅ Basic 벡터스토어 새로 생성: {self.basic_collection_name}")
+        except Exception as e:
+            print(f"❌ Basic 벡터스토어 생성 실패: {e}")
+            raise e
         
-        # 커스텀 청킹용 벡터스토어  
-        self.custom_vectorstore = Chroma(
-            collection_name=self.custom_collection_name,
-            embedding_function=self.embedding_function,
-            persist_directory=self.persist_directory,
-            collection_metadata={"hnsw:space": "cosine", "chunking_type": "custom"}
-        )
+        # 커스텀 청킹용 벡터스토어 (완전 새로 생성)  
+        try:
+            self.custom_vectorstore = Chroma(
+                collection_name=self.custom_collection_name,
+                embedding_function=self.embedding_function,
+                persist_directory=self.persist_directory
+            )
+            print(f"✅ Custom 벡터스토어 새로 생성: {self.custom_collection_name}")
+        except Exception as e:
+            print(f"❌ Custom 벡터스토어 생성 실패: {e}")
+            raise e
+    
+    def _reset_vectorstore(self, store_type):
+        """벡터스토어 재설정 - Windows 호환"""
+        import uuid
+        
+        try:
+            # 기존 벡터DB 완전 삭제 (Windows 호환)
+            if os.path.exists(self.persist_directory):
+                import shutil
+                import time
+                time.sleep(1)  # Windows 파일 잠금 해제 대기
+                
+                try:
+                    shutil.rmtree(self.persist_directory, ignore_errors=True)
+                    time.sleep(0.5)
+                    print(f"🗑️ 기존 벡터DB 완전 삭제: {self.persist_directory}")
+                except Exception as delete_err:
+                    print(f"⚠️ 삭제 실패, 새 디렉토리 사용: {delete_err}")
+                    self.persist_directory = f"./data/vectordb_{int(time.time())}"
+            
+            # 새 디렉토리 생성
+            os.makedirs(self.persist_directory, exist_ok=True)
+            print(f"📁 새 벡터DB 디렉토리 생성")
+        except Exception as e:
+            print(f"⚠️ 디렉토리 처리 오류: {e}")
+            # 고유한 컬렉션명으로 처리
+            if store_type == "basic":
+                self.basic_collection_name = f"{self.basic_collection_name}_{uuid.uuid4().hex[:8]}"
+            elif store_type == "custom":
+                self.custom_collection_name = f"{self.custom_collection_name}_{uuid.uuid4().hex[:8]}"
+        
+        if store_type == "basic":
+            self.basic_vectorstore = Chroma(
+                collection_name=self.basic_collection_name,
+                embedding_function=self.embedding_function,
+                persist_directory=self.persist_directory
+            )
+        elif store_type == "custom":
+            self.custom_vectorstore = Chroma(
+                collection_name=self.custom_collection_name,
+                embedding_function=self.embedding_function,
+                persist_directory=self.persist_directory
+            )
+        print(f"✅ {store_type} 벡터스토어 재생성 완료")
     
     def add_documents(self, documents, chunking_type="basic", ids=None):
         """청킹 타입에 따라 적절한 벡터스토어에 문서 추가"""
@@ -131,9 +262,27 @@ class DualVectorStoreManager:
         return vectorstore.similarity_search(query, k=k)
     
     def similarity_search_with_score(self, query, chunking_type="basic", k=5):
-        """청킹 타입별 점수 포함 유사도 검색"""
+        """청킹 타입별 점수 포함 유사도 검색 - 거리를 유사도로 변환"""
         vectorstore = self._get_vectorstore_by_type(chunking_type)
-        return vectorstore.similarity_search_with_relevance_scores(query, k=k)
+        
+        # ChromaDB의 similarity_search_with_score 사용 (거리값 반환)
+        results = vectorstore.similarity_search_with_score(query, k=k)
+        
+        # 거리를 유사도로 변환 (0~1 사이, 1에 가까울수록 유사)
+        converted_results = []
+        for doc, distance in results:
+            # ChromaDB가 L2 distance를 반환하는 경우를 처리
+            # L2 distance가 큰 값(>2)이면 L2 거리, 작은 값이면 cosine distance로 가정
+            if distance > 2:
+                # L2 거리를 유사도로 변환: exp(-distance/scale)로 더 부드러운 변환
+                import math
+                similarity = math.exp(-distance / 100.0)  # 스케일 조정으로 더 의미있는 범위
+            else:
+                # cosine distance인 경우: similarity = 1 - distance  
+                similarity = max(0, 1 - distance)
+            converted_results.append((doc, similarity))
+        
+        return converted_results
     
     def dual_search(self, query, k=5):
         """기본/커스텀 두 벡터스토어에서 동시 검색"""

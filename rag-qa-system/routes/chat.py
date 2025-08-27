@@ -2,11 +2,66 @@ from flask import Blueprint, request, jsonify, stream_with_context, Response
 from services.rag_chain import RAGChain
 from models.vectorstore import VectorStoreManager
 from config import Config
+from services.card_manager import process_user_card_query
 import json
 import time
 import uuid
+import os
+import re
 
 chat_bp = Blueprint('chat', __name__)
+
+def extract_images_from_context(context, answer):
+    """RAG 컨텍스트와 답변에서 이미지 경로 추출 (강화된 카드 이미지 인식)"""
+    images = []
+    
+    # MD 파일에서 이미지 패턴 찾기: ![alt](image.gif) 또는 ![alt](image.png)
+    image_pattern = r'!\[([^\]]*)\]\(([^)]+\.(?:gif|png|jpg|jpeg))\)'
+    
+    # 컨텍스트에서 이미지 검색
+    context_matches = re.findall(image_pattern, context, re.IGNORECASE)
+    for alt_text, image_path in context_matches:
+        # 카드 이미지 우선 처리
+        priority = 1
+        if any(card_name in alt_text.lower() for card_name in ['카드', '로고', '발급']):
+            priority = 5  # 카드 이미지 고우선순위
+        elif '절차' in alt_text:
+            priority = 4  # 절차 이미지
+        
+        images.append({
+            'alt': alt_text,
+            'path': image_path,
+            'url': f'/images/{image_path}',  # 웹 서빙 URL
+            'source': 'context',
+            'priority': priority
+        })
+    
+    # 답변에서 이미진 검색
+    answer_matches = re.findall(image_pattern, answer, re.IGNORECASE)
+    for alt_text, image_path in answer_matches:
+        # 답변의 이미지를 최고 우선순위로
+        images.append({
+            'alt': alt_text,
+            'path': image_path,
+            'url': f'/images/{image_path}',
+            'source': 'answer',
+            'priority': 10
+        })
+    
+    # 중복 제거 및 우선순위 정렬
+    unique_images = []
+    seen_paths = set()
+    
+    # 우선순위순 정렬
+    images.sort(key=lambda x: x.get('priority', 1), reverse=True)
+    
+    for img in images:
+        if img['path'] not in seen_paths:
+            seen_paths.add(img['path'])
+            unique_images.append(img)
+    
+    print(f"🖼️ 추출된 이미지: {len(unique_images)}개 - {[img['path'] for img in unique_images]}")
+    return unique_images
 
 # Initialize RAG chain (consider using app context or dependency injection in production)
 rag_chain = None
@@ -30,6 +85,39 @@ def query():
         
         if not question:
             return jsonify({"error": "Question is required"}), 400
+        
+        # 카드 분석 질문 감지
+        import re
+        card_analysis_pattern = r'([가-힣]{2,4})\s*(?:회원|고객|님|씨)?\s*(?:카드|발급)'
+        match = re.search(card_analysis_pattern, question)
+        
+        if match:
+            try:
+                customer_name = match.group(1)
+                from services.card_analysis_service import CardAnalysisService
+                card_service = CardAnalysisService()
+                analysis = card_service.analyze_customer_cards(customer_name)
+                formatted_response = card_service.format_analysis_response(analysis)
+                
+                return jsonify({
+                    "answer": formatted_response,
+                    "sources": [f"{customer_name}_회원은행별_카드발급안내.md"],
+                    "query": question,
+                    "search_mode": "card_analysis",
+                    "llm_model": llm_model,
+                    "processing_time": 0.5,
+                    "source_documents": [],
+                    "card_analysis": {
+                        "customer_name": customer_name,
+                        "owned_count": len(analysis.owned_cards),
+                        "recommended_count": len(analysis.recommended_cards),
+                        "available_count": len(analysis.available_cards),
+                        "total_options": analysis.total_summary['총옵션']
+                    }
+                })
+            except Exception as card_error:
+                print(f"카드 분석 오류: {card_error}")
+                # 일반 RAG로 fallback
         
         # Get RAG chain instance
         chain = get_rag_chain()
@@ -78,11 +166,11 @@ def stream_query():
                 
                 # 프로세스별 폴더 경로 설정
                 if platform.system() == "Windows":
-                    s3_folder = "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\s3"
-                    s3_chunking_folder = "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\s3-chunking"
+                    s3_folder = "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3"
+                    s3_chunking_folder = "D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3-chunking"
                 else:
-                    s3_folder = "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/s3"
-                    s3_chunking_folder = "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/s3-chunking"
+                    s3_folder = "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system/s3"
+                    s3_chunking_folder = "/mnt/d/99_DEOTIS_QA_SYSTEM/03_DEOTIS_QA/rag-qa-system/s3-chunking"
                 
                 # 4개 프로세스 정의
                 processes = [
@@ -379,6 +467,9 @@ def chatgpt_basic():
         
         chain = get_rag_chain()
         
+        # 벡터스토어 초기화 확인
+        chain._initialize_vectorstore()
+        
         # 기본 검색 수행
         import time
         start_time = time.time()
@@ -487,6 +578,9 @@ def chatgpt_custom():
             return jsonify({"error": "Question is required"}), 400
         
         chain = get_rag_chain()
+        
+        # 벡터스토어 초기화 확인
+        chain._initialize_vectorstore()
         
         # 커스텀 검색 수행
         import time
@@ -811,6 +905,101 @@ def vllm_dual_stream():
                 print(f"📊 [vLLM {process_id}] 질문: {question[:100]}...")
                 print(f"🔧 [vLLM {process_id}] 청킹 타입: {chunking_type}")
                 
+                # 김명정 등 사용자 감지 및 카드 정보 처리
+                enhanced_question = question
+                card_summary = None
+                is_personalized = False
+                
+                user_patterns = ['김명정', '이영희', '박철수', '최영수']
+                detected_user = None
+                
+                for user in user_patterns:
+                    if user in question:
+                        detected_user = user
+                        break
+                
+                if detected_user:
+                    print(f"🔍 [vLLM {process_id}] {detected_user} 고객 감지")
+                    card_keywords = ['카드', '발급', '회원은행', '은행별']
+                    
+                    if any(keyword in question for keyword in card_keywords):
+                        print(f"💳 [vLLM {process_id}] 카드 관련 질의 감지 - 동적 처리")
+                        # 개인화 플래그 설정 (중요: MCP 성공 전에 미리 설정)
+                        is_personalized = True
+                        print(f"✅ [vLLM {process_id}] 개인화 모드 활성화: {detected_user} 고객")
+                        
+                        # MCP 카드 분석 시스템 강화 (모든 청킹 타입에서 동작)
+                        try:
+                            print(f"🔍 [vLLM {process_id}] MCP 카드 분석 시스템 시작")
+                            
+                            # CardAnalysisService 사용
+                            from services.card_analysis_service import CardAnalysisService
+                            card_service = CardAnalysisService()
+                            
+                            # 김명정 카드 정보 분석
+                            analysis = card_service.analyze_customer_cards(detected_user)
+                            card_summary = card_service.format_analysis_response(analysis)
+                            
+                            print(f"📊 [vLLM {process_id}] 카드 분석 결과:")
+                            print(f"   - 보유 카드: {len(analysis.owned_cards)}장")
+                            print(f"   - 추천 카드: {len(analysis.recommended_cards)}장") 
+                            print(f"   - 발급 가능: {len(analysis.available_cards)}장")
+                            
+                            # 카드 이미지 정보 추가
+                            owned_card_images = []
+                            for card in analysis.owned_cards:
+                                if '우리카드' in card.name:
+                                    owned_card_images.append('![\uc6b0\ub9ac\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.014.gif)')
+                                elif '하나카드' in card.name:
+                                    owned_card_images.append('![\ud558\ub098\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.016.gif)')
+                                elif 'NH카드' in card.name or '농협' in card.name:
+                                    owned_card_images.append('![\ub18d\ud611\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.017.gif)')
+                            
+                            # 발급 가능 카드 이미지
+                            available_card_images = []
+                            for card in analysis.available_cards + analysis.recommended_cards:
+                                if 'BC카드' in card.name:
+                                    available_card_images.append('![BC\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.004.gif)')
+                                elif '신한카드' in card.name:
+                                    available_card_images.append('![\uc2e0\ud55c\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.005.gif)')
+                                elif '국민카드' in card.name or 'KB' in card.name:
+                                    available_card_images.append('![\uad6d\ubbfc\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.006.jpeg)')
+                                elif '롯데카드' in card.name:
+                                    available_card_images.append('![\ub86f\ub370\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.007.jpeg)')
+                                elif '삼성카드' in card.name:
+                                    available_card_images.append('![\uc0bc\uc131\uce74\ub4dc \ub85c\uace0](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.008.jpeg)')
+                            
+                            # 카드 발급 절차 이미지
+                            process_image = '![\uce74\ub4dc\ubc1c\uae09 \uc808\ucc28](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.013.gif)'
+                            
+                            enhanced_question = f"""
+질문: {question}
+
+=== {detected_user} 고객 카드 분석 결과 ===
+{card_summary}
+
+현재 보유하신 카드 이미지:
+{chr(10).join(owned_card_images) if owned_card_images else '보유한 카드가 없습니다.'}
+
+발급 가능한 카드 이미지:
+{chr(10).join(available_card_images[:3])}
+
+카드 발급 절차:
+{process_image}
+
+위 분석 결과와 이미지를 바탕으로 {detected_user} 고객에게 맞춤형 카드 발급 안내를 제공해주세요.
+현재 보유하신 카드와 새로 발급 가능한 카드를 명확히 구분하여 안내해주세요.
+답변에 이미지를 포함하여 작성해주세요.
+"""
+                            print(f"✅ [vLLM {process_id}] MCP 개인화 질의 생성 완료: {len(enhanced_question)}자")
+                            print(f"🎯 [vLLM {process_id}] 개인화 전용 프롬프트 사용 예정")
+                            
+                        except Exception as e:
+                            print(f"❌ [vLLM {process_id}] MCP 카드 분석 오류: {e}")
+                            import traceback
+                            print(f"🔍 [vLLM {process_id}] 상세 오류:\n{traceback.format_exc()}")
+                            enhanced_question = question
+                
                 try:
                     # 프로세스 시작 알림
                     result_queue.put({
@@ -833,22 +1022,75 @@ def vllm_dual_stream():
                     print(f"🔍 [vLLM {process_id}] 문서 검색 시작...")
                     chain = get_rag_chain()
                     
+                    # 벡터스토어 초기화 확인
+                    chain._initialize_vectorstore()
+                    
                     if chunking_type == "basic":
                         # s3기본: DualVectorStore의 basic 컬렉션에서 검색
                         if hasattr(chain, 'dual_vectorstore_manager') and chain.dual_vectorstore_manager:
                             print(f"📚 [vLLM {process_id}] basic 컬렉션에서 검색")
-                            search_results = chain.dual_vectorstore_manager.similarity_search_with_score(question, "basic", k=5)
+                            search_results = chain.dual_vectorstore_manager.similarity_search_with_score(question, "basic", k=10)  # 더 많은 결과
                         else:
                             print(f"⚠️ [vLLM {process_id}] 폴백: 기본 벡터스토어 사용")
-                            search_results = chain.vectorstore_manager.similarity_search_with_score(question, k=5)
+                            search_query = enhanced_question if is_personalized else question
+                            search_results = chain.vectorstore_manager.similarity_search_with_score(search_query, k=10)
                     else:
-                        # s3-chunking: DualVectorStore의 custom 컬렉션에서 검색
-                        if hasattr(chain, 'dual_vectorstore_manager') and chain.dual_vectorstore_manager:
-                            print(f"📚 [vLLM {process_id}] custom 컬렉션에서 검색")
-                            search_results = chain.dual_vectorstore_manager.similarity_search_with_score(question, "custom", k=5)
-                        else:
-                            print(f"⚠️ [vLLM {process_id}] 폴백: 기본 벡터스토어 사용")
-                            search_results = chain.vectorstore_manager.similarity_search_with_score(question, k=5)
+                        # s3-chunking: 다양한 키워드로 검색하여 카드 상세 정보 포함
+                        print(f"📚 [vLLM {process_id}] custom 컬렉션에서 확장 검색 시작")
+                        
+                        # 1차: 기본 검색 (개인화된 경우 enhanced_question 사용)
+                        search_query = enhanced_question if is_personalized else question
+                        basic_search = chain.dual_vectorstore_manager.similarity_search_with_score(search_query, "custom", k=5)
+                        
+                        # 2차: 카드 발급 상세 정보를 위한 키워드 검색
+                        detailed_keywords = [
+                            "카드발급 절차",
+                            "발급대상",
+                            "신청방법 구비서류",
+                            "회원은행 영업점",
+                            "카드 심사",
+                            "결제능력 심사",
+                            "BC카드발급안내",
+                            f"{detected_user} 고객 현황",
+                            "보유 카드 미보유 카드",
+                            "카드 이미지"
+                        ]
+                        
+                        additional_results = []
+                        for keyword in detailed_keywords:
+                            try:
+                                keyword_results = chain.dual_vectorstore_manager.similarity_search_with_score(keyword, "custom", k=3)
+                                additional_results.extend(keyword_results)
+                                print(f"🔑 [vLLM {process_id}] '{keyword}' 검색: {len(keyword_results)}개 결과")
+                            except Exception as e:
+                                print(f"⚠️ [vLLM {process_id}] '{keyword}' 검색 실패: {e}")
+                                continue
+                        
+                        # 3차: s3기본 컬렉션에서도 카드 발급 상세 정보 가져오기 (크로스 검색)
+                        s3_basic_results = []
+                        try:
+                            s3_basic_results = chain.dual_vectorstore_manager.similarity_search_with_score("카드발급 절차 신청방법", "basic", k=5)
+                            print(f"🔄 [vLLM {process_id}] s3기본에서 크로스 검색: {len(s3_basic_results)}개 결과")
+                            additional_results.extend(s3_basic_results)
+                        except Exception as e:
+                            print(f"⚠️ [vLLM {process_id}] s3기본 크로스 검색 실패: {e}")
+                        
+                        # 결과 합치기 및 중복 제거
+                        all_results = basic_search + additional_results
+                        seen_content = set()
+                        search_results = []
+                        
+                        for doc, score in all_results:
+                            content_hash = hash(doc.page_content[:100])  # 첫 100자로 중복 체크
+                            if content_hash not in seen_content:
+                                search_results.append((doc, score))
+                                seen_content.add(content_hash)
+                        
+                        # 점수순 정렬
+                        search_results.sort(key=lambda x: x[1], reverse=True)
+                        search_results = search_results[:15]  # 상위 15개로 확대
+                        
+                        print(f"🔍 [vLLM {process_id}] 확장 검색 완료: 기본 {len(basic_search)}개 + 키워드 {len(additional_results)-len(s3_basic_results)}개 + s3기본 {len(s3_basic_results)}개 → 최종 {len(search_results)}개")
                     
                     print(f"📊 [vLLM {process_id}] 검색 결과: {len(search_results)}개")
                     if search_results:
@@ -868,21 +1110,68 @@ def vllm_dual_stream():
                         })
                         return
                     
-                    # 컨텍스트 준비 (vLLM 토큰 제한 고려)
+                    # 컨텍스트 준비 (카드 상세 정보 우선 포함)
                     context = ""
-                    max_doc_length = 800  # vLLM용 최적화된 길이
-                    for doc, score in search_results[:2]:  # 2개 문서만 사용
+                    max_doc_length = 3000  # 카드 이미지와 상세 정보를 위해 더 확대
+                    included_docs = 0
+                    
+                    # 우선순위 1: 이미지가 포함된 문서 먼저 포함
+                    image_docs = []
+                    other_docs = []
+                    
+                    for doc, score in search_results:
+                        if '![' in doc.page_content and '](' in doc.page_content:  # 이미지 문법이 포함된 문서
+                            image_docs.append((doc, score))
+                        else:
+                            other_docs.append((doc, score))
+                    
+                    # 이미지가 있는 문서 먼저 포함
+                    for doc, score in (image_docs + other_docs):
+                        if included_docs >= 8:  # 최대 8개 문서까지
+                            break
+                            
                         doc_content = doc.page_content
                         if len(doc_content) > max_doc_length:
                             doc_content = doc_content[:max_doc_length] + "..."
-                        context += f"{doc_content}\n\n"
-                        if len(context) > 1200:  # 전체 컨텍스트 제한
+                        
+                        context += f"[유사도: {score:.1%}] {doc_content}\n\n"
+                        included_docs += 1
+                        
+                        if len(context) > 10000:  # 전체 컨텍스트 더 확대 (이미지 정보 포함)
                             break
+                    
+                    print(f"📝 [vLLM {process_id}] 컨텍스트 구성: 이미지 문서 {len(image_docs)}개, 일반 문서 {len(other_docs)}개, 총 {included_docs}개 포함")
                     
                     print(f"📝 [vLLM {process_id}] 컨텍스트 길이: {len(context)}자")
                     
-                    # vLLM 호출을 위한 간단한 프롬프트
-                    prompt = f"""다음 정보를 바탕으로 질문에 답하세요:
+                    # vLLM 호출을 위한 프롬프트 (개인화 대응)
+                    print(f"🤖 [vLLM {process_id}] 프롬프트 선택: is_personalized={is_personalized}, detected_user={detected_user}")
+                    
+                    if is_personalized and detected_user:
+                        # 개인화된 카드 발급 전용 프롬프트
+                        print(f"🎆 [vLLM {process_id}] {detected_user} 고객 전용 개인화 프롬프트 사용")
+                        prompt = f"""당신은 BC카드 전문 상담사입니다. {detected_user} 고객에게 맞춤형 카드 발급 안내를 제공하세요.
+
+=== 제공된 자료 ===
+{context}
+
+=== {detected_user} 고객 개인화 정보 ===
+{enhanced_question}
+
+**답변 작성 가이드:**
+1. {detected_user} 고객의 현재 보유 카드와 미보유 카드를 명확히 구분해주세요
+2. 보유 카드는 "✅ 현재 보유중" 으로 표시
+3. 추천 카드는 "⭐ 발급 추천" 으로 표시  
+4. 발급 가능 카드는 "🆕 발급가능" 으로 표시
+5. 이미지가 있는 경우 ![\uce74\ub4dc\uc774\ub984](\uc774\ubbf8\uc9c0\ud30c\uc77c) 형식으로 포함
+6. BC카드 발급 절차도 포함해주세요
+7. VIP 고객 우대 혜택 안내 포함
+
+답변:"""
+                    else:
+                        # 일반 프롬프트
+                        print(f"🗏️ [vLLM {process_id}] 기본 프롬프트 사용")
+                        prompt = f"""다음 정보를 바탕으로 질문에 답하세요:
 
 {context}
 
@@ -922,9 +1211,12 @@ def vllm_dual_stream():
                     # 유사도 정보 생성
                     similarity_info = []
                     for i, (doc, score) in enumerate(search_results[:3], 1):
+                        # 벡터스토어에서 이미 0-1 범위의 cosine similarity를 반환하므로 그대로 사용
+                        normalized_score = max(0.0, min(1.0, score))  # 0-1 범위로 클램핑만 수행
+                        
                         similarity_info.append({
                             'rank': i,
-                            'score': f'{score:.1%}',
+                            'score': f'{normalized_score:.2%}',  # 소수점 2자리로 표시
                             'source': doc.metadata.get('source_file', doc.metadata.get('source', 'Unknown')),
                             'content_preview': doc.page_content[:100] + '...' if len(doc.page_content) > 100 else doc.page_content
                         })
@@ -932,6 +1224,10 @@ def vllm_dual_stream():
                     end_time = time.time()
                     total_time = end_time - start_time
                     print(f"⏱️ [vLLM {process_id}] 총 처리 시간: {total_time:.2f}초")
+                    
+                    # RAG 응답에서 이미지 경로 자동 추출
+                    extracted_images = extract_images_from_context(context, answer)
+                    print(f"🖼️ [vLLM {process_id}] 추출된 이미지: {len(extracted_images)}개")
                     
                     result_queue.put({
                         'type': 'process_complete',
@@ -942,7 +1238,8 @@ def vllm_dual_stream():
                         'similarity_info': similarity_info,
                         'total_time': round(total_time, 2),
                         'status': 'success',
-                        'chunking_type': chunking_type
+                        'chunking_type': chunking_type,
+                        'images': extracted_images  # 이미지 정보 추가
                     })
                     
                     print(f"🎉 [vLLM {process_id}] 프로세스 완료!")
@@ -1036,6 +1333,7 @@ def clear_memory():
     """Clear conversation memory"""
     try:
         chain = get_rag_chain()
+        chain._initialize_vectorstore()
         chain.clear_memory()
         return jsonify({"message": "Memory cleared successfully"})
     except Exception as e:

@@ -19,25 +19,35 @@ class RAGChain:
     def __init__(self):
         self.llm_manager = LLMManager()
         self.embedding_manager = EmbeddingManager()
-        self.vectorstore_manager = VectorStoreManager(
-            self.embedding_manager.get_embeddings()
-        )
-        # 이중 벡터스토어 매니저 추가
-        self.dual_vectorstore_manager = get_dual_vectorstore()
+        self.vectorstore_manager = None
+        self.dual_vectorstore_manager = None
         # Expose vectorstore for external access
-        self.vectorstore = self.vectorstore_manager
+        self.vectorstore = None
         self.memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True,
             output_key="answer"
         )
-        self.qa_chain = None
-        self.cache_manager = CacheFactory.get_cache_manager()  # Use cache factory
-        # self.query_analyzer = QueryAnalyzer()  # 질문 분석기
-        # self.reranker = SearchReranker()  # 재순위 시스템
-        self.stats_db_path = "./data/search_stats.db"
-        self.initialize_stats_db()
-        self.initialize_chain()
+    
+    def _initialize_vectorstore(self):
+        """VectorStore 지연 초기화"""
+        if self.vectorstore_manager is None:
+            self.vectorstore_manager = VectorStoreManager(
+                self.embedding_manager.get_embeddings()
+            )
+            # 이중 벡터스토어 매니저 추가
+            self.dual_vectorstore_manager = get_dual_vectorstore()
+            # Expose vectorstore for external access
+            self.vectorstore = self.vectorstore_manager
+            
+            # 초기화 후 추가 구성 요소들 설정
+            self.qa_chain = None
+            self.cache_manager = CacheFactory.get_cache_manager()
+            # self.query_analyzer = QueryAnalyzer()  # 질문 분석기
+            # self.reranker = SearchReranker()  # 재순위 시스템
+            self.stats_db_path = "./data/search_stats.db"
+            self.initialize_stats_db()
+            self.initialize_chain()
     
     def initialize_stats_db(self):
         """검색 통계 데이터베이스 초기화"""
@@ -211,6 +221,9 @@ class RAGChain:
     
     def search_with_strategy(self, question, search_mode="basic", k=5):  # Reduced k for optimization
         """청킹 전략별 문서 검색"""
+        # 벡터스토어 초기화 확인
+        self._initialize_vectorstore()
+        
         try:
             if search_mode == "dual":
                 # 이중 검색: 기본 + 커스텀
@@ -230,6 +243,9 @@ class RAGChain:
     
     def get_conversational_chain(self):
         """Create a conversational retrieval chain with memory"""
+        # 벡터스토어 초기화 확인
+        self._initialize_vectorstore()
+        
         return ConversationalRetrievalChain.from_llm(
             llm=self.llm_manager.get_llm(),
             retriever=self.vectorstore_manager.get_retriever(k=5),
@@ -240,6 +256,9 @@ class RAGChain:
     
     def query(self, question, use_memory=False, llm_model=None, use_cache=True, search_mode="basic"):
         """Query the RAG system with caching support and performance tracking"""
+        # 벡터스토어 초기화 확인
+        self._initialize_vectorstore()
+        
         start_time = time.time()
         cache_start_time = None
         cache_end_time = None
@@ -328,8 +347,17 @@ class RAGChain:
             except:
                 analyzed_keywords = []
             
+            # 카드 관련 질의 감지
+            card_keywords = ["카드", "발급", "회원", "은행", "카드발급", "김명정"]
+            is_card_query = any(keyword in question for keyword in card_keywords)
+            
             # Get similarity search results with scores first using strategy (increased k for better recall)
-            if search_mode == "dual":
+            if is_card_query and search_mode == "custom":
+                # 카드 관련 질의에 대해 강화된 검색 사용
+                similarity_results = self.dual_vectorstore_manager.enhanced_card_search(question, k=15)
+                documents = [doc for doc, score in similarity_results]
+                print(f"🔍 [카드 전용 검색] 강화된 검색으로 {len(documents)}개 문서 검색")
+            elif search_mode == "dual":
                 similarity_results = self.dual_vectorstore_manager.dual_search(question, k=20)
                 documents = [doc for doc, score in similarity_results]
             elif search_mode == "custom":

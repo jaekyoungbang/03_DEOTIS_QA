@@ -1,17 +1,29 @@
 import os
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from flask_cors import CORS
 from flask_restx import Api, Resource, fields
 from config import Config
 from routes.chat import chat_bp
 from routes.chat_local import chat_local_bp
-from routes.document import document_bp
+from routes.card_analysis import card_analysis_bp
+# document_bp는 나중에 import
 
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
+
+# 정적 파일 경로 추가 (s3-chunking 이미지용)
+import os
+s3_chunking_static_path = os.path.join(os.path.dirname(__file__), 's3-chunking')
+print(f"📁 정적 파일 경로 설정: {s3_chunking_static_path}")
+
+# 정적 파일 라우트 추가
+@app.route('/static-images/<path:filename>')
+def serve_static_images(filename):
+    """정적 이미지 파일 서빙 (추가 방법)"""
+    return send_from_directory(s3_chunking_static_path, filename)
 
 # Initialize Flask-RESTX for Swagger
 api = Api(
@@ -29,7 +41,8 @@ api = Api(
     
     ### 사용 방법:
     1. /deotisrag - 메인 RAG 시스템 접속
-    2. /swagger/ - API 문서 확인
+    2. /api/card-analysis/demo - 카드 분석 데모
+    3. /swagger/ - API 문서 확인
     ''',
     doc='/swagger/',
     prefix='/api'
@@ -42,7 +55,18 @@ ns_chat = api.namespace('chat', description='채팅 시스템')
 # Register blueprints - 핵심 기능만
 app.register_blueprint(chat_bp, url_prefix='/api/chat')
 app.register_blueprint(chat_local_bp, url_prefix='/api/chat')
-app.register_blueprint(document_bp, url_prefix='/api/document')
+app.register_blueprint(card_analysis_bp, url_prefix='/api/card-analysis')
+
+# document_bp는 나중에 지연 등록
+def register_document_bp():
+    """Document Blueprint 지연 등록"""
+    try:
+        from routes.document import document_bp
+        app.register_blueprint(document_bp, url_prefix='/api/document')
+        print("✅ Document Blueprint 등록 완료")
+    except Exception as e:
+        print(f"⚠️ Document Blueprint 등록 실패: {e}")
+        print("💡 Document 관련 API는 사용할 수 없지만 다른 기능은 정상 작동합니다.")
 
 @app.route('/')
 def index():
@@ -192,8 +216,9 @@ def initialize_documents():
         # 항상 문서를 로드 (매번 최신 상태 유지)
         print("\n" + "="*60)
         print("🚀 S3 폴더에서 문서를 로드합니다...")
-        print("📁 D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\s3 (Word 파일)")
-        print("📁 D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\s3-chunking (MD 파일)")
+        print("📁 D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3 (Word 파일)")
+        print("📁 D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3-chunking (MD 파일)")
+        print("📁 D:\\99_DEOTIS_QA_SYSTEM\\03_DEOTIS_QA\\rag-qa-system\\s3-common (공통 파일 - 개인정보)")
         print("="*60)
         
         # 자동 로딩 실행 (항상 clear_before_load=True)
@@ -220,6 +245,63 @@ def initialize_documents():
         print("   /deotisrag에서 수동으로 문서를 로드할 수 있습니다.")
         print("="*60 + "\n")
 
+@app.route('/images/<path:filename>')
+def serve_s3_chunking_image(filename):
+    """s3-chunking 폴더의 이미지 파일 서빙"""
+    try:
+        # s3-chunking 폴더 경로 (rag-qa-system 내부)
+        current_dir = os.path.dirname(os.path.abspath(__file__))  # rag-qa-system 폴더
+        s3_chunking_path = os.path.join(current_dir, 's3-chunking')
+        
+        # 파일 경로 확인 로그
+        print(f"🔍 이미지 요청: {filename}")
+        print(f"📁 s3-chunking 경로: {s3_chunking_path}")
+        
+        # 실제 파일 존재 여부 확인
+        full_path = os.path.join(s3_chunking_path, filename)
+        print(f"📄 전체 경로: {full_path}")
+        print(f"🔍 파일 존재: {os.path.exists(full_path)}")
+        
+        # 보안을 위해 파일명 검증
+        if '..' in filename or filename.startswith('/'):
+            return jsonify({'error': 'Invalid filename'}), 400
+            
+        # Aspose.Words로 생성된 이미지 파일만 허용
+        if not filename.startswith('Aspose.Words.'):
+            print(f"❌ 권한 없는 파일 접근: {filename}")
+            return jsonify({'error': 'Unauthorized file access'}), 403
+        
+        # 이미지 파일 확장자 확인
+        allowed_extensions = {'.gif', '.png', '.jpg', '.jpeg'}
+        file_ext = os.path.splitext(filename)[1].lower()
+        if file_ext not in allowed_extensions:
+            print(f"❌ 허용되지 않은 파일 확장자: {file_ext}")
+            return jsonify({'error': 'Invalid file type'}), 403
+            
+        print(f"✅ 이미지 서빙: {filename}")
+        
+        # 파일이 실제로 존재하는지 다시 확인
+        if not os.path.exists(full_path):
+            print(f"❌ 파일 없음: {full_path}")
+            return jsonify({'error': f'File not found: {filename}'}), 404
+        
+        try:
+            response = send_from_directory(s3_chunking_path, filename)
+            
+            # CORS 헤더 및 캐시 헤더 추가
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+            response.headers.add('Cache-Control', 'public, max-age=300')
+            
+            print(f"📤 파일 전송 성공: {filename}")
+            return response
+        except Exception as send_error:
+            print(f"❌ 파일 전송 오류: {send_error}")
+            return jsonify({'error': f'File send error: {str(send_error)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Image not found: {str(e)}'}), 404
+
 if __name__ == '__main__':
     # Create necessary directories
     os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
@@ -227,6 +309,9 @@ if __name__ == '__main__':
     
     # 문서 자동 로드
     initialize_documents()
+    
+    # Document Blueprint 지연 등록 (벡터DB 초기화 후)
+    register_document_bp()
     
     print("🚀 BC Card RAG QA System 시작")
     print(f"📱 메인 앱: http://localhost:{Config.PORT}/deotisrag")

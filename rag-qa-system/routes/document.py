@@ -9,10 +9,19 @@ import uuid
 
 document_bp = Blueprint('document', __name__)
 
-# Initialize components
-doc_processor = DocumentProcessor()
-embedding_manager = EmbeddingManager()
-vectorstore_manager = VectorStoreManager(embedding_manager.get_embeddings())
+# Initialize components (지연 로딩)
+doc_processor = None
+embedding_manager = None
+vectorstore_manager = None
+
+def get_components():
+    """컴포넌트 지연 로딩"""
+    global doc_processor, embedding_manager, vectorstore_manager
+    if doc_processor is None:
+        doc_processor = DocumentProcessor()
+        embedding_manager = EmbeddingManager()
+        vectorstore_manager = VectorStoreManager(embedding_manager.get_embeddings())
+    return doc_processor, embedding_manager, vectorstore_manager
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -40,6 +49,9 @@ def upload_document():
         unique_filename = f"{uuid.uuid4()}_{filename}"
         file_path = os.path.join(Config.UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
+        
+        # Get components
+        doc_processor, embedding_manager, vectorstore_manager = get_components()
         
         # Validate file
         if not doc_processor.validate_file(file_path):
@@ -72,6 +84,9 @@ def upload_document():
 def upload_text():
     """Process raw text input"""
     try:
+        # Get components
+        doc_processor, embedding_manager, vectorstore_manager = get_components()
+        
         data = request.get_json()
         text = data.get('text')
         title = data.get('title', 'Untitled')
@@ -105,6 +120,9 @@ def upload_text():
 def list_documents():
     """List uploaded documents"""
     try:
+        # Get components
+        doc_processor, embedding_manager, vectorstore_manager = get_components()
+        
         # Get vector DB status
         total_chunks = vectorstore_manager.get_document_count()
         has_documents = total_chunks > 0
@@ -204,6 +222,9 @@ def load_s3_documents():
 def clear_all_documents():
     """Clear all documents from vector store"""
     try:
+        # Get components
+        doc_processor, embedding_manager, vectorstore_manager = get_components()
+        
         # Delete all files
         if os.path.exists(Config.UPLOAD_FOLDER):
             for filename in os.listdir(Config.UPLOAD_FOLDER):

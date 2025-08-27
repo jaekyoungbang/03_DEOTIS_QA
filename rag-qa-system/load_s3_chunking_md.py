@@ -75,9 +75,9 @@ class OptimizedMarkdownChunker:
                     'source': file_path,
                     'filename': filename,
                     'section': section['title'],
-                    'chunk_id': idx,
+                    'chunk_id': str(idx),
                     'chunk_type': section['type'],
-                    'images': images,
+                    'images_count': len(images),
                     'has_images': len(images) > 0,
                     'folder_type': 's3-chunking',
                     'file_type': 'markdown',
@@ -108,13 +108,12 @@ class OptimizedMarkdownChunker:
                         'section': f"{section['title']} → {next_section['title']}",
                         'chunk_id': f"{idx}_overlap_{idx+1}",
                         'chunk_type': 'overlap',
-                        'images': overlap_images,
+                        'images_count': len(overlap_images),
                         'has_images': len(overlap_images) > 0,
                         'folder_type': 's3-chunking',
                         'file_type': 'markdown',
                         'processing_strategy': 'optimized_md_chunking_with_overlap',
-                        'is_overlap': True,
-                        'overlap_sections': [section['title'], next_section['title']]
+                        'is_overlap': True
                     }
                 )
                 documents.append(overlap_doc)
@@ -244,11 +243,11 @@ class S3ChunkingMDLoader:
             except Exception as e:
                 print(f"⚠️ 컬렉션 초기화 실패: {e}")
         
-        # MD 파일 찾기
+        # MD 파일 찾기 - 모든 MD 파일 포함
         md_files = []
         if os.path.exists(s3_chunking_path):
             for file in os.listdir(s3_chunking_path):
-                if file.endswith('.md') and ('완전판' in file or '최적화' in file):
+                if file.endswith('.md'):
                     md_files.append(os.path.join(s3_chunking_path, file))
         
         if not md_files:
@@ -359,7 +358,7 @@ class S3ChunkingMDLoader:
                         print(f"      - Score: {score:.4f}")
                         print(f"      - Content: {doc.page_content[:100]}...")
                         if doc.metadata.get('has_images'):
-                            print(f"      - 이미지 포함: {len(doc.metadata.get('images', []))}개")
+                            print(f"      - 이미지 포함: {doc.metadata.get('images_count', 0)}개")
                 else:
                     print(f"   ⚠️ '{query}' 검색 결과 없음")
                     
