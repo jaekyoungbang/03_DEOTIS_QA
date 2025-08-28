@@ -1321,7 +1321,7 @@ STEP 04. 현금을 확인하고 본인의 신용카드, 여권, 매출표(회원
 
    ![우리카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.014.gif)![Standard Chartered SC제일은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.015.gif)![하나카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.016.gif)![NH농협카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.017.gif)![IBK기업은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.018.gif)![KB국민카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.019.gif)![DGB대구은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.020.gif)![BNK부산은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.021.gif)![BNK경남은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.022.gif)
 
-   ![citi은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.023.gif)![신한카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.024.gif)![BC 바로카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.025.gif)
+   ![citi은행](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.023.gif)![신한카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.007.jpeg)![BC 바로카드](Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.006.jpeg)
 
 
 **[카드분실/도난사고보상처리안내]**

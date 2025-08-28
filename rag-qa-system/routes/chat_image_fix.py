@@ -25,7 +25,7 @@ def generate_card_images_by_chunking_type(analysis, detected_user, process_id, c
                 available_card_images.append(f'![{card.name}](/images/{card.image_path})')
         
         # 카드 발급 절차 이미지 (벡터DB에서 찾으면 포함)
-        process_image = '![카드발급 절차](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.013.gif)'
+        process_image = '![카드발급 절차](/images/Aspose.Words.4c2a2064-0c7c-48d5-aca6-c4d7a6eade2b.006.jpeg)'
         
     else:  # s3 (basic) - 텍스트만
         print(f"📝 [vLLM {process_id}] s3기본: 텍스트 전용 모드 (이미지 없음)")

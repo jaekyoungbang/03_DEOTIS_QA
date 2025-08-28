@@ -3,11 +3,16 @@ from services.rag_chain import RAGChain
 from models.vectorstore import VectorStoreManager
 from config import Config
 from services.card_manager import process_user_card_query
+from services.performance_optimizer import (
+    query_router, memory_optimizer, response_optimizer, 
+    user_manager, performance_monitor, performance_optimized
+)
 import json
 import time
 import uuid
 import os
 import re
+import logging
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -74,8 +79,12 @@ def get_rag_chain():
 
 @chat_bp.route('/query', methods=['POST'])
 @chat_bp.route('/../rag/chat', methods=['POST'])
+@performance_optimized(monitor_performance=True)
 def query():
-    """Handle chat queries"""
+    """Handle chat queries with performance optimization"""
+    start_time = time.time()
+    session_id = str(uuid.uuid4())
+    
     try:
         data = request.get_json()
         question = data.get('question')
@@ -85,6 +94,34 @@ def query():
         
         if not question:
             return jsonify({"error": "Question is required"}), 400
+        
+        # 1. 세션 등록 및 사용자 관리
+        user_info = {"ip": request.remote_addr, "user_agent": request.headers.get('User-Agent', '')}
+        if not user_manager.register_session(session_id, user_info):
+            return jsonify({"error": "시스템 용량 초과. 잠시 후 다시 시도해주세요."}), 503
+        
+        # 2. 스마트 쿼리 라우팅
+        query_classification = query_router.classify_query(question)
+        logging.info(f"Query classification: {query_classification}")
+        
+        # 3. 초고속 응답 확인 (캐시된 응답)
+        fast_response = response_optimizer.fast_response(question)
+        if fast_response:
+            user_manager.update_session_activity(session_id)
+            return jsonify({
+                "answer": fast_response,
+                "sources": ["cached_response"],
+                "query": question,
+                "search_mode": "cached",
+                "llm_model": llm_model,
+                "processing_time": round(time.time() - start_time, 2),
+                "source_documents": [],
+                "optimization_info": {
+                    "query_type": query_classification['type'],
+                    "processing_route": "fast_cached",
+                    "session_id": session_id
+                }
+            })
         
         # 카드 분석 질문 감지
         import re
@@ -119,16 +156,94 @@ def query():
                 print(f"카드 분석 오류: {card_error}")
                 # 일반 RAG로 fallback
         
-        # Get RAG chain instance
+        # 4. RAG 체인 최적화 처리
         chain = get_rag_chain()
         
-        # Query the RAG system with search mode
+        # 5. 메모리 최적화된 문서 검색
+        if hasattr(chain, 'dual_vectorstore_manager') and chain.dual_vectorstore_manager:
+            # 듀얼 벡터스토어에서 검색
+            chunking_type = "custom" if search_mode == "advanced" else "basic"
+            k_value = 10 if query_classification['type'] == 'complex' else 5  # 복잡한 질문은 더 많은 문서
+            
+            search_results = chain.dual_vectorstore_manager.similarity_search_with_score(
+                question, chunking_type, k=k_value
+            )
+            
+            # 메모리 최적화된 청크 처리
+            optimized_docs = [doc for doc, score in search_results]
+            optimized_chunks = memory_optimizer.optimize_chunks(optimized_docs, question)
+            
+            # 최적화된 응답 생성
+            if optimized_chunks:
+                context = "\n\n".join([chunk.page_content for chunk in optimized_chunks])
+                prompt = chain.prompt_template.format(context=context, question=question)
+                
+                # LLM 호출 (메모리 최적화된 프롬프트)
+                from models.llm import LLMManager
+                llm_manager = LLMManager()
+                llm = llm_manager.get_llm(model_name=llm_model)
+                
+                response_text = llm.invoke(prompt)
+                if hasattr(response_text, 'content'):
+                    answer = response_text.content
+                else:
+                    answer = str(response_text)
+                
+                # 성능 메트릭 기록
+                end_time = time.time()
+                processing_time = end_time - start_time
+                
+                import psutil
+                performance_monitor.record_metrics(
+                    response_time=processing_time,
+                    memory_usage=psutil.virtual_memory().percent,
+                    cpu_usage=psutil.cpu_percent(),
+                    cache_hit_rate=0.0,  # 실제 응답이므로 캐시 히트 없음
+                    concurrent_users=len(user_manager.active_sessions),
+                    error_count=0,
+                    total_requests=1
+                )
+                
+                user_manager.update_session_activity(session_id)
+                
+                return jsonify({
+                    "answer": answer,
+                    "sources": [chunk.metadata.get('source_file', 'Unknown') for chunk in optimized_chunks[:3]],
+                    "query": question,
+                    "search_mode": f"optimized_{chunking_type}",
+                    "llm_model": llm_model,
+                    "processing_time": round(processing_time, 2),
+                    "source_documents": [{
+                        "content": chunk.page_content[:200] + "..." if len(chunk.page_content) > 200 else chunk.page_content,
+                        "metadata": chunk.metadata
+                    } for chunk in optimized_chunks[:3]],
+                    "optimization_info": {
+                        "query_type": query_classification['type'],
+                        "processing_route": "optimized_rag",
+                        "original_chunks": len(optimized_docs),
+                        "optimized_chunks": len(optimized_chunks),
+                        "memory_savings": f"{((len(optimized_docs) - len(optimized_chunks)) / max(len(optimized_docs), 1)) * 100:.1f}%",
+                        "session_id": session_id
+                    }
+                })
+        
+        # 폴백: 기존 RAG 체인 사용
         response = chain.query(
             question, 
             use_memory=use_memory, 
             llm_model=llm_model,
             search_mode=search_mode
         )
+        
+        # 세션 활동 업데이트
+        user_manager.update_session_activity(session_id)
+        
+        # 최적화 정보 추가
+        response["optimization_info"] = {
+            "query_type": query_classification['type'],
+            "processing_route": "fallback_rag",
+            "session_id": session_id
+        }
         
         return jsonify(response)
     
