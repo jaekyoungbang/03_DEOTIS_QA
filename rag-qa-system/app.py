@@ -279,6 +279,14 @@ def serve_s3_chunking_image(filename):
         current_dir = os.path.dirname(os.path.abspath(__file__))  # rag-qa-system 폴더
         s3_chunking_path = os.path.join(current_dir, 's3-chunking')
         
+        # GIF 요청이 들어오면 JPG로 치환해서 서빙
+        if filename.endswith('.gif'):
+            jpg_filename = filename.replace('.gif', '-0000.jpg')
+            jpg_path = os.path.join(s3_chunking_path, jpg_filename)
+            if os.path.exists(jpg_path):
+                print(f"🔄 GIF → JPG 치환: {filename} → {jpg_filename}")
+                filename = jpg_filename
+        
         # 파일 경로 확인 로그
         print(f"🔍 이미지 요청: {filename}")
         print(f"📁 s3-chunking 경로: {s3_chunking_path}")

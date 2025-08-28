@@ -256,6 +256,10 @@ class DynamicCardAnalysisService:
                     # 관대한 패턴으로 이미지 추출
                     image_matches = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', doc)
                     for alt_text, img_path in image_matches:
+                        # GIF 확장자를 JPG로 치환
+                        if img_path.endswith('.gif'):
+                            img_path = img_path.replace('.gif', '-0000.jpg')
+                        
                         # 카드 관련 이미지만 필터링
                         if (any(card in alt_text for card in ['카드', '은행']) or 
                             any(num in img_path for num in ['014', '016', '017', '018', '019', '020', '021', '022', '023', '024', '025'])):

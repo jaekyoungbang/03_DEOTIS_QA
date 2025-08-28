@@ -89,6 +89,10 @@ class OptimizedMarkdownChunker:
         images = []
         for match in self.image_pattern.finditer(content):
             image_path = match.group(1)
+            # GIF 확장자를 JPG로 치환
+            if image_path.endswith('.gif'):
+                image_path = image_path.replace('.gif', '-0000.jpg')
+            
             images.append({
                 'path': image_path,
                 'full_tag': match.group(0)

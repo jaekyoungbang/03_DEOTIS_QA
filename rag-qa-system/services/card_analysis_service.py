@@ -142,12 +142,21 @@ class CardAnalysisService:
         
         # 카드명과 관련된 이미지 찾기
         for image_path in matches:
+            # GIF 확장자를 JPG로 치환
+            if image_path.endswith('.gif'):
+                image_path = image_path.replace('.gif', '-0000.jpg')
+            
             if any(keyword in image_path.lower() or keyword in content.lower() 
                    for keyword in [card_name.lower().replace('카드', ''), 'card', 'logo']):
                 return image_path
         
         # 첫 번째 이미지 반환 (없으면 None)
-        return matches[0] if matches else None
+        if matches:
+            first_image = matches[0]
+            if first_image.endswith('.gif'):
+                first_image = first_image.replace('.gif', '-0000.jpg')
+            return first_image
+        return None
     
     def _extract_benefits(self, content: str, card_name: str) -> List[str]:
         """카드별 혜택을 추출합니다."""

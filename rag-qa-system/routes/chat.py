@@ -26,6 +26,10 @@ def extract_images_from_context(context, answer):
     # 컨텍스트에서 이미지 검색
     context_matches = re.findall(image_pattern, context, re.IGNORECASE)
     for alt_text, image_path in context_matches:
+        # GIF 확장자를 JPG로 치환
+        if image_path.endswith('.gif'):
+            image_path = image_path.replace('.gif', '-0000.jpg')
+        
         # 카드 이미지 우선 처리
         priority = 1
         if any(card_name in alt_text.lower() for card_name in ['카드', '로고', '발급']):
@@ -44,6 +48,10 @@ def extract_images_from_context(context, answer):
     # 답변에서 이미진 검색
     answer_matches = re.findall(image_pattern, answer, re.IGNORECASE)
     for alt_text, image_path in answer_matches:
+        # GIF 확장자를 JPG로 치환
+        if image_path.endswith('.gif'):
+            image_path = image_path.replace('.gif', '-0000.jpg')
+        
         # 답변의 이미지를 최고 우선순위로
         images.append({
             'alt': alt_text,
